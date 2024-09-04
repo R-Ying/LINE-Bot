@@ -24,21 +24,20 @@ const bucket = admin.storage().bucket();
 // 新的數據庫規則
 const newRules = {
   "rules": {
-    ".read": false,
-    ".write": false,
-    "users": {
-      "$userId": {
-        ".read": "$userId === auth.uid",
-        ".write": "$userId === auth.uid"
-      }
-    },
     "cases": {
-      ".indexOn": ["status", "category"],
-      ".read": "auth != null && (data.child('status').val() === '處理中' || data.child('userId').val() === auth.uid)",
-      ".write": "auth != null && (!data.exists() || data.child('userId').val() === auth.uid)",
+      ".read": true,
+      ".write": "auth != null",
       "$caseId": {
-        ".read": "auth != null && data.child('userId').val() === auth.uid",
-        ".write": "auth != null && (!data.exists() || data.child('userId').val() === auth.uid)"
+        ".read": true,
+        ".write": "auth != null",
+        "likes": {
+          ".read": true,
+          ".write": "auth != null"
+        },
+        "userLikes": {
+          ".read": true,
+          ".write": "auth != null"
+        }
       }
     }
   }
@@ -217,9 +216,6 @@ async function getInProgressCases() {
   const casesRef = db.ref('cases');
   const snapshot = await casesRef.once('value');
   
-  console.log('Snapshot exists:', snapshot.exists());
-  console.log('Snapshot value:', snapshot.val());
-
   if (!snapshot.exists()) {
     console.log('No cases found.');
     return [];
@@ -228,7 +224,6 @@ async function getInProgressCases() {
   let cases = [];
   snapshot.forEach(childSnapshot => {
     let caseData = childSnapshot.val();
-    console.log('Case data:', caseData);
     cases.push({
       caseId: caseData.caseId,
       category: caseData.category,
@@ -239,17 +234,66 @@ async function getInProgressCases() {
       longitude: caseData.longitude,
       uploadTime: caseData.uploadTime,
       status: caseData.status,
-      additionalImageUrls: caseData.additionalImageUrls || []
+      additionalImageUrls: caseData.additionalImageUrls || [],
+      likes: caseData.likes || 0
     });
   });
-
-  console.log('All cases:', cases);
   
-  // 過濾 status 為 "未處理" 或 "處理中" 的案件
   const filteredCases = cases.filter(caseItem => caseItem.status === '未處理' || caseItem.status === '處理中');
   console.log('Filtered cases:', filteredCases);
   
   return filteredCases;
+}
+
+async function likeCase(caseId, userId) {
+  console.log(`likeCase function called with caseId: ${caseId}, userId: ${userId}`);
+  const casesRef = db.ref('cases');
+
+  try {
+    // 首先找到包含指定 caseId 的案件
+    const snapshot = await casesRef.orderByChild('caseId').equalTo(caseId).once('value');
+    if (snapshot.numChildren() === 0) {
+      console.log(`Case ${caseId} not found`);
+      throw new Error(`Case ${caseId} not found`);
+    }
+
+    // 獲取實際的案件 key
+    const caseKey = Object.keys(snapshot.val())[0];
+    const caseRef = casesRef.child(caseKey);
+
+    const result = await caseRef.transaction((currentData) => {
+      if (currentData === null) return null;
+
+      let likes = currentData.likes || 0;
+      let userLikes = currentData.userLikes || {};
+
+      if (userLikes[userId]) {
+        likes--;
+        delete userLikes[userId];
+      } else {
+        likes++;
+        userLikes[userId] = true;
+      }
+
+      return { ...currentData, likes, userLikes };
+    });
+
+    if (!result.committed) {
+      throw new Error("Transaction failed commitment");
+    }
+
+    const updatedData = result.snapshot.val();
+    console.log('Transaction completed successfully');
+    console.log('Updated data:', updatedData);
+
+    // 更新績效數據 (如果需要的話)
+    // 注意：您可能需要為 casePerformance 創建一個新的結構
+
+    return updatedData.likes;
+  } catch (error) {
+    console.error("Error in likeCase:", error);
+    throw error;
+  }
 }
 
 // 新增刪除資料的功能
@@ -268,4 +312,4 @@ async function clearDatabase(path) {
 // // 示例：清空 users 路徑下的所有資料
 // clearDatabase('users');
 
-module.exports = { updateUserPoints, getUserPoints, uploadImage, getUserCases, deleteCase, clearDatabase, db, bucket, getCompletedCases, uploadCasePhoto, getInProgressCases};
+module.exports = { updateUserPoints, getUserPoints, uploadImage, getUserCases, deleteCase, clearDatabase, db, bucket, getCompletedCases, uploadCasePhoto, getInProgressCases, likeCase};

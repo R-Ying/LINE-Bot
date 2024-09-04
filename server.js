@@ -2,7 +2,7 @@ const express = require("express");
 const multer = require("multer");
 const fs = require("fs");
 const exec = require("child_process").exec;
-const { updateUserPoints, uploadImage, getUserCases, deleteCase, db, bucket, getCompletedCases, uploadCasePhoto, getInProgressCases} = require("./firebase.js");
+const { updateUserPoints, uploadImage, getUserCases, deleteCase, db, bucket, getCompletedCases, uploadCasePhoto, getInProgressCases, likeCase} = require("./firebase.js");
 const { bot, sendMessage } = require("./bot");
 const fetch = require("node-fetch");
 require('dotenv').config();
@@ -183,6 +183,30 @@ app.post("/api/upload-case-photo", upload.single("image"), async (req, res) => {
           });
       }
       uploadLock.delete(caseId);
+  }
+});
+
+app.post("/api/like-case", async (req, res) => {
+  const { caseId, userId } = req.body;
+  console.log(`Received like request for caseId: ${caseId}, userId: ${userId}`);
+
+  if (!caseId || !userId) {
+    console.warn("Invalid request: missing caseId or userId");
+    return res.status(400).json({ success: false, error: "缺少必要參數" });
+  }
+
+  try {
+    console.log(`Attempting to like case ${caseId} for user ${userId}`);
+    const likes = await likeCase(caseId, userId);
+    console.log(`Successfully liked case ${caseId}. New like count: ${likes}`);
+    res.status(200).json({ success: true, likes });
+  } catch (error) {
+    console.error("Error liking case:", error);
+    if (error.message === `Case ${caseId} not found`) {
+      res.status(404).json({ success: false, error: "找不到指定的案件" });
+    } else {
+      res.status(500).json({ success: false, error: "伺服器處理請求時發生錯誤", details: error.message });
+    }
   }
 });
 

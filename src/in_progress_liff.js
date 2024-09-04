@@ -1,23 +1,54 @@
 let map;
 let allCases = [];
+let userId;
+
+const originalFetch = window.fetch;
+window.fetch = function(...args) {
+    console.log('Fetch request:', args[0]);
+    return originalFetch.apply(this, args);
+};
 
 document.addEventListener('DOMContentLoaded', function() {
-    if (liff) {
-        liff.init({ liffId: "2005958463-KeJ5Rme1" })  // 請確保這是正確的 LIFF ID
-            .then(() => {
-                console.log("LIFF initialized successfully");
-                fetchCases();
-                setupNavigation();
-            })
-            .catch((err) => {
-                console.error('LIFF 初始化失敗', err);
-                document.body.innerHTML = `<p>LIFF 初始化失敗: ${err.message}</p>`;
-            });
-    } else {
+    initializeLIFF();
+});
+
+async function initializeLIFF() {
+    if (!liff) {
         console.error('LIFF SDK not loaded');
         document.body.innerHTML = '<p>LIFF SDK 未加載，請確保在 LINE 應用內打開此頁面</p>';
+        return;
     }
-});
+
+    try {
+        await liff.init({ liffId: "2005958463-KeJ5Rme1" });
+        console.log("LIFF initialized successfully");
+        
+        if (!liff.isLoggedIn()) {
+            console.log("User not logged in. Redirecting to login...");
+            liff.login();
+        } else {
+            await handleLoggedInUser();
+        }
+    } catch (err) {
+        console.error('LIFF 初始化失敗', err);
+        alert(`LIFF 初始化失敗: ${err.message}`);
+        document.body.innerHTML = `<p>LIFF 初始化失敗: ${err.message}</p>`;
+    }
+}
+
+async function handleLoggedInUser() {
+    try {
+        const profile = await liff.getProfile();
+        userId = profile.userId;
+        console.log("User logged in:", userId);
+        
+        await fetchCases();
+        setupNavigation();
+    } catch (error) {
+        console.error('Error getting user profile:', error);
+        alert('獲取用戶信息失敗，請稍後再試');
+    }
+}
 
 function setupNavigation() {
     console.log("Setting up navigation...");
@@ -55,28 +86,62 @@ function showMapView(caseId = null) {
 }
 
 function initializeFullMap(focusCaseId = null) {
+    console.log('開始初始化地圖...');
     const mapContainer = document.getElementById('fullMap');
-    if (!mapContainer) return;
+    if (!mapContainer) {
+        console.error('找不到地圖容器元素');
+        return;
+    }
 
     if (!mapboxgl.supported()) {
+        console.warn('瀏覽器不支持 Mapbox GL');
         mapContainer.innerHTML = '您的瀏覽器不支持 Mapbox GL';
         return;
     }
 
-    mapboxgl.accessToken = process.env.MAPBOX_ACCESS_TOKEN; // 請替換為您的 Mapbox access token
-    
-    if (!map) {
-        map = new mapboxgl.Map({
-            container: 'fullMap',
-            style: 'mapbox://styles/mapbox/streets-v11',
-            center: [120.9605, 23.6978], // 台灣中心點
-            zoom: 7
-        });
+    // Use environment variable or set access token directly
+    mapboxgl.accessToken = 'your_mapbox_access_token_here';
+    console.log('Mapbox access token:', mapboxgl.accessToken);
 
-        map.addControl(new mapboxgl.NavigationControl());
+    if (!mapboxgl.accessToken) {
+        console.error('Mapbox access token 未設置');
+        mapContainer.innerHTML = 'Mapbox access token 未設置';
+        return;
     }
 
-    // 清除現有的標記
+    try {
+        if (!map) {
+            console.log('創建新的 Mapbox 實例');
+            map = new mapboxgl.Map({
+                container: 'fullMap',
+                style: 'mapbox://styles/mapbox/streets-v11',
+                center: [120.9605, 23.6978], // 台灣中心點
+                zoom: 7
+            });
+
+            map.on('load', () => {
+                console.log('地圖加載完成');
+                addMarkersToMap(focusCaseId);
+            });
+
+            map.on('error', (e) => {
+                console.error('地圖加載錯誤:', e);
+            });
+
+            map.addControl(new mapboxgl.NavigationControl());
+        } else {
+            console.log('使用現有的 Mapbox 實例');
+            addMarkersToMap(focusCaseId);
+        }
+    } catch (error) {
+        console.error('初始化地圖時發生錯誤:', error);
+        mapContainer.innerHTML = '初始化地圖時發生錯誤';
+    }
+}
+
+function addMarkersToMap(focusCaseId) {
+    console.log('開始添加標記...');
+    // Clear existing markers
     const markers = document.getElementsByClassName('mapboxgl-marker');
     while(markers[0]) {
         markers[0].parentNode.removeChild(markers[0]);
@@ -106,10 +171,11 @@ function initializeFullMap(focusCaseId = null) {
         });
         focusedMarker.togglePopup();
     }
+    console.log('標記添加完成');
 }
 
 function createCaseElement(caseItem) {
-    console.log('創建案件元素：', caseItem.caseId);
+    console.log('Creating case element:', caseItem.caseId);
     const caseElement = document.createElement('div');
     caseElement.className = 'case-item';
 
@@ -122,6 +188,10 @@ function createCaseElement(caseItem) {
         <p><strong>額外詳情：</strong> ${caseItem.extraDetails || '無'}</p>
         <p><strong>位置：</strong> <a href="#" class="map-link" data-case-id="${caseItem.caseId}">查看地圖</a></p>
         <p><strong>上傳時間：</strong> ${new Date(caseItem.uploadTime).toLocaleString()}</p>
+        <button class="like-button" data-case-id="${caseItem.caseId}">
+            <i class="fas fa-thumbs-up"></i> 
+            <span class="like-count">${caseItem.likes || 0}</span>
+        </button>
     `;
 
     if (caseItem.additionalImageUrls && caseItem.additionalImageUrls.length > 0) {
@@ -133,17 +203,17 @@ function createCaseElement(caseItem) {
             imgContainer.className = 'image-container';
 
             const imgElement = document.createElement('img');
-            imgElement.src = img.imageUrl;
+            imgElement.src = typeof img === 'string' ? img : img.imageUrl;
             imgElement.alt = `案件圖片 ${index + 1}`;
             imgElement.className = 'additional-image';
 
             const descriptionElement = document.createElement('p');
             descriptionElement.className = 'image-description';
-            descriptionElement.textContent = img.description || '無描述';
+            descriptionElement.textContent = typeof img === 'object' ? (img.description || '無描述') : '無描述';
 
             const uploadTimeElement = document.createElement('p');
             uploadTimeElement.className = 'image-upload-time';
-            uploadTimeElement.textContent = new Date(img.uploadTime).toLocaleString();
+            uploadTimeElement.textContent = typeof img === 'object' && img.uploadTime ? new Date(img.uploadTime).toLocaleString() : '未知上傳時間';
 
             imgContainer.appendChild(imgElement);
             imgContainer.appendChild(descriptionElement);
@@ -155,10 +225,15 @@ function createCaseElement(caseItem) {
         caseElement.appendChild(imagesContainer);
     }
 
-    // 添加事件監聽器到地圖連結
+    // Add event listener to map link
     caseElement.querySelector('.map-link').addEventListener('click', function(e) {
         e.preventDefault();
         showMapView(caseItem.caseId);
+    });
+
+    // Add event listener to like button
+    caseElement.querySelector('.like-button').addEventListener('click', function() {
+        likeCaseFunc(caseItem.caseId);
     });
 
     return caseElement;
@@ -178,7 +253,7 @@ async function fetchCases() {
 
         const casesContainer = document.getElementById('casesContainer');
         if (casesContainer) {
-            casesContainer.innerHTML = ''; // 清空容器
+            casesContainer.innerHTML = ''; // Clear container
             if (allCases.length === 0) {
                 casesContainer.innerHTML = '<p>沒有找到處理中的案件。</p>';
             } else {
@@ -198,4 +273,36 @@ async function fetchCases() {
             casesContainer.innerHTML = `<p>載入案件時出錯：${error.message}</p>`;
         }
     }
+}
+
+function likeCaseFunc(caseId) {
+    fetch('/api/like-case', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ caseId: caseId, userId: userId }),
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => {
+                throw new Error(err.error || `HTTP error! status: ${response.status}`);
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            const likeButton = document.querySelector(`.like-button[data-case-id="${caseId}"]`);
+            const likeCount = likeButton.querySelector('.like-count');
+            likeCount.textContent = data.likes;
+        } else {
+            console.error('按讚失敗:', data.message);
+            alert('按讚失敗，請稍後再試。');
+        }
+    })
+    .catch((error) => {
+        console.error('按讚時發生錯誤:', error);
+        alert(`按讚時發生錯誤：${error.message}`);
+    });
 }
