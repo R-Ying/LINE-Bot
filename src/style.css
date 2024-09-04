@@ -1,0 +1,210 @@
+/* 現有的樣式 */
+#MainDiv label {
+    margin: 3px;
+}
+
+#MainDiv textarea {
+    margin: 3px;
+}
+
+#uploadInput {
+    margin: 3px;
+}
+
+#imagePreview {
+    margin: 3px;
+}
+
+#map {
+    width: 100%;
+    height: 400px;
+    margin-top: 3px;
+    display: none;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.table-wrapper {
+    overflow-x: auto;
+}
+
+.table {
+    width: 100%;
+    table-layout: auto;
+}
+
+.table th, .table td {
+    min-width: 100px;
+    word-wrap: break-word;
+}
+
+.tab-pane {
+    display: none;
+}
+
+.tab-pane.active {
+    display: block;
+}
+
+.map-container {
+    height: 300px;
+    width: 100%;
+}
+
+.img-fluid {
+    max-width: 100%;
+    height: auto;
+    margin-top: 20px;
+}
+
+@media (max-width: 768px) {
+    .case-item {
+        padding: 0.5rem;
+    }
+
+    .image-container {
+        width: 150px;
+    }
+
+    .additional-image {
+        height: 100px;
+    }
+}
+
+.media-container {
+    display: flex;
+    overflow-x: auto;
+    gap: 10px;
+    padding: 10px 0;
+    scroll-snap-type: x mandatory;
+}
+
+.repair-image {
+    max-height: 200px;
+}
+
+#exampleImagesContainer {
+    text-align: center;
+    margin: 0 auto;
+}
+
+#bestCaseContainer,
+#worstCaseContainer {
+    display: inline-block;
+    text-align: center;
+}
+
+#bestCaseImage,
+#worstCaseImage {
+    display: inline-block;
+    margin: 0 auto;
+    max-width: 100%;
+    height: auto;
+}
+
+/* 新增的樣式 */
+.case-item {
+    border: 1px solid #e2e8f0;
+    border-radius: 0.25rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.overflow-x-auto {
+    overflow-x: auto;
+}
+
+.whitespace-nowrap {
+    white-space: nowrap;
+}
+
+.navbar {
+    background-color: #f8f9fa;
+    padding: 10px;
+}
+
+.navbar ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    justify-content: space-around;
+}
+
+.navbar a {
+    text-decoration: none;
+    color: #333;
+    padding: 5px 10px;
+}
+
+.navbar a.active {
+    font-weight: bold;
+    border-bottom: 2px solid #007bff;
+}
+
+.full-map-container {
+    height: calc(100vh - 50px);
+    width: 100%;
+}
+
+.case-item {
+    border: 1px solid #e2e8f0;
+    border-radius: 0.25rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.media-container {
+    display: flex;
+    overflow-x: auto;
+    gap: 10px;
+    padding: 10px 0;
+    -webkit-overflow-scrolling: touch;
+}
+
+.image-container {
+    flex: 0 0 auto;
+    width: 200px;
+}
+
+.additional-image {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+}
+
+.image-description, .image-upload-time {
+    margin: 5px 0;
+    font-size: 0.9em;
+    white-space: normal; /* 確保文字可以換行 */
+}
+
+.image-upload-time {
+    color: #666;
+    font-size: 0.8em;
+}
+
+/* 美化滾動條 */
+.media-container::-webkit-scrollbar {
+    height: 8px;
+}
+
+.media-container::-webkit-scrollbar-thumb {
+    background-color: #cbd5e0;
+    border-radius: 4px;
+}
+
+.media-container::-webkit-scrollbar-track {
+    background-color: #f1f1f1;
+}
+
+/* 確保整個案件容器不會溢出 */
+#casesContainer {
+    max-width: 100%;
+    overflow-x: hidden;
+}

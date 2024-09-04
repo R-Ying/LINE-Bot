@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>處理中案件</title>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script src='https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.js'></script>
+    <link href='https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.css' rel='stylesheet' />
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <ul>
+            <li><a href="#" id="caseListLink" class="active">案件列表</a></li>
+            <li><a href="#" id="mapViewLink">地圖</a></li>
+        </ul>
+    </nav>
+    <div id="caseListView">
+        <div id="casesContainer" class="container mx-auto p-4"></div>
+    </div>
+    <div id="mapView" style="display: none;">
+        <div id="fullMap" class="full-map-container"></div>
+    </div>
+    <script src="in_progress_liff.js"></script>
+</body>
+</html>
