@@ -2,7 +2,7 @@ const express = require("express");
 const multer = require("multer");
 const fs = require("fs");
 const exec = require("child_process").exec;
-const { updateUserPoints, uploadImage, getUserCases, deleteCase, db, bucket, getCompletedCases, uploadCasePhoto, getInProgressCases, likeCase} = require("./firebase.js");
+const { updateUserPoints, uploadImage, getUserCases, deleteCase, db, bucket, getCompletedCases, uploadCasePhoto, getInProgressCases, likeCase, recordUserLogin, recordPageView} = require("./firebase.js");
 const { bot, sendMessage } = require("./bot");
 const fetch = require("node-fetch");
 require('dotenv').config();
@@ -14,7 +14,15 @@ const upload = multer({ dest: "uploads/" });
 app.post("/webhook", bot.parser());
 
 app.use(express.json());
-app.use(express.static('dist'));
+// app.use(express.static('dist'));
+app.use(express.static('public'));
+app.use(express.static('dist', {
+  setHeaders: (res, path, stat) => {
+    if (path.endsWith('.js')) {
+      res.set('Content-Type', 'application/javascript');
+    }
+  }
+}));
 
 app.use('src/style.css', function(req, res, next) {
   res.set('Content-Type', 'text/css');
@@ -249,6 +257,53 @@ app.get("/api/get-user-data", async (req, res) => {
   }
 });
 
+app.get("/api/dashboard-data", async (req, res) => {
+  try {
+    const casesSnapshot = await db.ref("cases").once("value");
+    const casesData = casesSnapshot.val() || {};
+
+    const performanceSnapshot = await db.ref("performance").once("value");
+    const performanceData = performanceSnapshot.val() || {};
+
+    let totalLikes = 0;
+    let likesData = {};
+
+    Object.values(casesData).forEach(caseData => {
+      totalLikes += caseData.likes || 0;
+      
+      if (!likesData[caseData.category]) {
+        likesData[caseData.category] = 0;
+      }
+      likesData[caseData.category] += caseData.likes || 0;
+    });
+
+    const likesDataArray = Object.entries(likesData).map(([category, likes]) => ({
+      category,
+      likes
+    }));
+
+    const usersSnapshot = await db.ref("users").once("value");
+    const usersData = usersSnapshot.val() || {};
+
+    const usersDataArray = Object.entries(usersData)
+      .map(([date, count]) => ({ date, count }))
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
+      .slice(0, 7)
+      .reverse();
+
+    res.json({
+      totalLikes,
+      pageViews: performanceData.pageViews || 0,
+      uniqueUsers: performanceData.uniqueUsers || 0,
+      likesData: likesDataArray,
+      usersData: usersDataArray
+    });
+  } catch (error) {
+    console.error("Error fetching dashboard data:", error);
+    res.status(500).json({ error: "Failed to fetch dashboard data" });
+  }
+});
+
 app.post("/api/update-case-status", async (req, res) => {
   const { caseId, status } = req.body;
 
@@ -273,6 +328,61 @@ app.post("/api/delete-case", async (req, res) => {
     res.status(500).send("伺服器錯誤");
   }
 });
+
+// Add a simple in-memory store for deduplication
+const recentLogins = new Set();
+const recentPageViews = new Set();
+
+app.post('/api/record-user-login', async (req, res) => {
+  const { userId } = req.body;
+  console.log('Received login request for user:', userId);
+  
+  // Check if this login was recently recorded
+  if (recentLogins.has(userId)) {
+    console.log('Recent login detected for user:', userId);
+    return res.status(200).json({ message: 'Login already recorded', newUser: false });
+  }
+
+  try {
+    const result = await recordUserLogin(userId);
+    // Add to recent logins set
+    recentLogins.add(userId);
+    // Remove from set after 5 minutes
+    setTimeout(() => recentLogins.delete(userId), 5 * 60 * 1000);
+    
+    console.log('Login recorded for user:', userId);
+    res.status(200).json({ message: 'User login recorded successfully', newUser: result.newUser });
+  } catch (error) {
+    console.error('Error recording user login:', error);
+    res.status(500).json({ error: 'Failed to record user login' });
+  }
+});
+
+app.post('/api/record-page-view', async (req, res) => {
+  const requestId = Date.now().toString();
+  console.log('Received page view request:', requestId);
+  
+  // Check if this page view was recently recorded
+  if (recentPageViews.has(requestId)) {
+    console.log('Recent page view detected:', requestId);
+    return res.status(200).json({ message: 'Page view already recorded', increment: 0 });
+  }
+
+  try {
+    const result = await recordPageView();
+    // Add to recent page views set
+    recentPageViews.add(requestId);
+    // Remove from set after 5 minutes
+    setTimeout(() => recentPageViews.delete(requestId), 5 * 60 * 1000);
+    
+    console.log('Page view recorded:', requestId);
+    res.status(200).json({ message: 'Page view recorded successfully', increment: result.increment });
+  } catch (error) {
+    console.error('Error recording page view:', error);
+    res.status(500).json({ error: 'Failed to record page view' });
+  }
+});
+
 
 async function getAddress(lat, lon) {
   const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&addressdetails=1`);

@@ -1,8 +1,8 @@
-// webpack.config.js
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const Dotenv = require('dotenv-webpack');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
+const Dotenv = require('dotenv-webpack');
 
 module.exports = {
   entry: {
@@ -13,27 +13,23 @@ module.exports = {
   },
   output: {
     path: path.resolve(__dirname, 'dist'),
-    filename: '[name].bundle.js'
+    filename: '[name].[contenthash].js',
+    clean: true,
+    publicPath: '/'
   },
   mode: 'development',
+  devtool: 'source-map',
   module: {
     rules: [
       {
-        test: /\.css$/i,
-        use: ['style-loader', 'css-loader']
+        test: /\.css$/,
+        use: [MiniCssExtractPlugin.loader, 'css-loader']
       },
       {
         test: /\.(png|svg|jpg|jpeg|gif)$/i,
         type: 'asset/resource',
       }
     ]
-  },
-  resolve: {
-    fallback: {
-      "path": require.resolve("path-browserify"),
-      "os": require.resolve("os-browserify/browser"),
-      "crypto": require.resolve("crypto-browserify")
-    }
   },
   plugins: [
     new HtmlWebpackPlugin({
@@ -56,12 +52,23 @@ module.exports = {
       chunks: ['in_progress_liff'],
       filename: 'in_progress_liff.html'
     }),
+    new MiniCssExtractPlugin({
+      filename: 'styles/[name].[contenthash].css'
+    }),
     new CopyWebpackPlugin({
       patterns: [
-        { from: 'src/style.css', to: 'style.css' },
-        { from: 'src/images', to: 'images' } // 假設您的圖片在 src/images 目錄下
+        { from: 'src/images', to: 'images' }
       ]
     }),
     new Dotenv()
-  ]
+  ],
+  devServer: {
+    static: {
+      directory: path.join(__dirname, 'dist'),
+    },
+    compress: true,
+    port: 8080,
+    hot: true,
+    historyApiFallback: true
+  }
 };

@@ -1,6 +1,12 @@
+import './style.css';
+
 let map;
 let allCases = [];
 let userId;
+let userLoginRecorded = false;
+let pageViewRecorded = false;
+let isInitialized = false;
+let initializationInProgress = false;
 
 const originalFetch = window.fetch;
 window.fetch = function(...args) {
@@ -8,14 +14,33 @@ window.fetch = function(...args) {
     return originalFetch.apply(this, args);
 };
 
-document.addEventListener('DOMContentLoaded', function() {
-    initializeLIFF();
-});
+// Debounce function (unchanged)
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
 
-async function initializeLIFF() {
+// Wrap initializeLIFF in a debounce function with additional checks
+const debouncedInitializeLIFF = debounce(async function() {
+    if (isInitialized || initializationInProgress) {
+        console.log('LIFF initialization already in progress or completed. Skipping...');
+        return;
+    }
+
+    initializationInProgress = true;
+    console.log('Initializing LIFF');
+
     if (!liff) {
         console.error('LIFF SDK not loaded');
         document.body.innerHTML = '<p>LIFF SDK 未加載，請確保在 LINE 應用內打開此頁面</p>';
+        initializationInProgress = false;
         return;
     }
 
@@ -27,26 +52,102 @@ async function initializeLIFF() {
             console.log("User not logged in. Redirecting to login...");
             liff.login();
         } else {
+            console.log("User is logged in. Handling logged in user...");
             await handleLoggedInUser();
         }
+        isInitialized = true;
     } catch (err) {
         console.error('LIFF 初始化失敗', err);
         alert(`LIFF 初始化失敗: ${err.message}`);
         document.body.innerHTML = `<p>LIFF 初始化失敗: ${err.message}</p>`;
+    } finally {
+        initializationInProgress = false;
     }
+}, 300);
+
+// Only attach the event listener once
+if (!window.liffInitialized) {
+    window.liffInitialized = true;
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOMContentLoaded event fired');
+        debouncedInitializeLIFF();
+    });
 }
 
+const debouncedRecordUserLogin = debounce(async (userId) => {
+    console.log('Attempting to record user login. Current state:', userLoginRecorded);
+    if (!userLoginRecorded) {
+        try {
+            const response = await fetch('/api/record-user-login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ userId }),
+            });
+            const result = await response.json();
+            console.log('User login record result:', result);
+            userLoginRecorded = true;
+            console.log('User login recorded. New state:', userLoginRecorded);
+        } catch (error) {
+            console.error('Error recording user login:', error);
+        }
+    } else {
+        console.log('User login already recorded. Skipping.');
+    }
+}, 300);
+
+const debouncedRecordPageView = debounce(async () => {
+    console.log('Attempting to record page view. Current state:', pageViewRecorded);
+    if (!pageViewRecorded) {
+        try {
+            const response = await fetch('/api/record-page-view', {
+                method: 'POST',
+            });
+            const result = await response.json();
+            console.log('Page view record result:', result);
+            pageViewRecorded = true;
+            console.log('Page view recorded. New state:', pageViewRecorded);
+        } catch (error) {
+            console.error('Error recording page view:', error);
+        }
+    } else {
+        console.log('Page view already recorded. Skipping.');
+    }
+}, 300);
+
 async function handleLoggedInUser() {
+    if (userId) {
+        console.log('User already handled. Skipping...');
+        return;
+    }
+
     try {
+        console.log('Handling logged in user...');
         const profile = await liff.getProfile();
         userId = profile.userId;
         console.log("User logged in:", userId);
+        
+        await debouncedRecordUserLogin(userId);
+        await debouncedRecordPageView();
         
         await fetchCases();
         setupNavigation();
     } catch (error) {
         console.error('Error getting user profile:', error);
         alert('獲取用戶信息失敗，請稍後再試');
+    }
+}
+
+async function recordPageView() {
+    try {
+        const response = await fetch('/api/record-page-view', {
+            method: 'POST',
+        });
+        const result = await response.json();
+        console.log('Page view record result:', result);
+    } catch (error) {
+        console.error('Error recording page view:', error);
     }
 }
 
@@ -100,7 +201,7 @@ function initializeFullMap(focusCaseId = null) {
     }
 
     // Use environment variable or set access token directly
-    mapboxgl.accessToken = 'your_mapbox_access_token_here';
+    mapboxgl.accessToken = process.env.MAPBOX_ACCESS_TOKEN;
     console.log('Mapbox access token:', mapboxgl.accessToken);
 
     if (!mapboxgl.accessToken) {

@@ -1,12 +1,162 @@
+import Chart from 'chart.js/auto';
+
 let isSubmitting = false;
+let likesChart = null;
+let usersChart = null;
+let pageViewsChart = null;
 
 document.addEventListener("DOMContentLoaded", function () {
+    loadDashboardData();
     loadActiveCases();
     document.getElementById('completed-cases-tab').addEventListener('click', loadCompletedCases);
     document.getElementById('repairForm').addEventListener('submit', handleRepairFormSubmit);
     document.getElementById('uploadPhotoForm').addEventListener('submit', handleUploadPhotoSubmit);
-    document.getElementById('data-table-body').addEventListener('change', handleStatusChange); // 添加事件監聽器
+    document.getElementById('data-table-body').addEventListener('change', handleStatusChange);
 });
+
+async function loadDashboardData() {
+    console.log("Starting to load dashboard data");
+    try {
+        const response = await fetch("/api/dashboard-data");
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        console.log("Dashboard data received:", data);
+
+        document.getElementById('total-likes').textContent = data.totalLikes;
+        document.getElementById('page-views').textContent = data.pageViews;
+        document.getElementById('unique-users').textContent = data.uniqueUsers;
+
+        createLikesChart(data.likesData); // 如果没有数据，则保持不变
+        createPageViewsChart(data.pageViews); // 传递总页面浏览量
+        createUsersChart(data.uniqueUsers); // 传递唯一用户数
+
+    } catch (error) {
+        console.error("Error loading dashboard data:", error);
+        document.getElementById('total-likes').textContent = "加載失敗";
+        document.getElementById('page-views').textContent = "加載失敗";
+        document.getElementById('unique-users').textContent = "加載失敗";
+    }
+}
+
+function createLikesChart(likesData) {
+    console.log("Creating likes chart with data:", likesData);
+    const ctx = document.getElementById('likesChart');
+    
+    if (likesChart) {
+        likesChart.destroy();
+    }
+    
+    if (!likesData || likesData.length === 0) {
+        console.warn("No likes data available for chart");
+        return;
+    }
+    
+    likesChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: likesData.map(d => d.category),
+            datasets: [{
+                label: '點讚數',
+                data: likesData.map(d => d.likes),
+                backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            },
+            plugins: {
+                title: {
+                    display: true,
+                    text: '各類別點讚數'
+                }
+            }
+        }
+    });
+}
+
+function createUsersChart(uniqueUsers) {
+    console.log("Creating users chart with value:", uniqueUsers);
+    const ctx = document.getElementById('usersChart').getContext('2d');
+    
+    if (usersChart) {
+        usersChart.destroy();
+    }
+    
+    // 单一数据点的条形图（Bar Chart）
+    usersChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Unique Users'],  // 标签
+            datasets: [{
+                label: '使用者數',
+                data: [uniqueUsers],  // 数据数组
+                backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            },
+            plugins: {
+                title: {
+                    display: true,
+                    text: '唯一使用者數量'
+                }
+            }
+        }
+    });
+}
+
+function createPageViewsChart(pageViews) {
+    console.log("Creating page views chart with value:", pageViews);
+    const ctx = document.getElementById('pageViewsChart').getContext('2d');
+    
+    if (pageViewsChart) {
+        pageViewsChart.destroy();
+    }
+    
+    // 使用条形图展示单一数据点
+    pageViewsChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Page Views'], // 标签
+            datasets: [{
+                label: '頁面瀏覽數',
+                data: [pageViews], // 数据数组
+                backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                borderColor: 'rgba(255, 99, 132, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            },
+            plugins: {
+                title: {
+                    display: true,
+                    text: '總頁面瀏覽數'
+                }
+            }
+        }
+    });
+}
 
 async function handleUploadPhotoSubmit(event) {
     event.preventDefault();
@@ -92,54 +242,61 @@ document.getElementById('repairForm').addEventListener('submit', function () {
     formSubmitted = true;
 });
 
-function loadActiveCases() {
-    fetch("/api/get-user-data")
-        .then(response => response.json())
-        .then(data => {
-            console.log("Active cases data:", data);
-            const tbody = document.getElementById("data-table-body");
-            tbody.innerHTML = "";
+async function loadActiveCases() {
+    try {
+        const response = await fetch("/api/get-user-data");
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        const tbody = document.getElementById("data-table-body");
+        tbody.innerHTML = "";
 
-            if (data) {
-                let index = 1;
-                for (const caseId in data) {
-                    const caseInfo = data[caseId];
-                    if (caseInfo.status !== "已處理") {
-                        const tr = document.createElement("tr");
-                        tr.innerHTML = `
-                            <td>${index++}</td>
-                            <td>${caseInfo.userId}</td>
-                            <td>${caseInfo.category}</td>
-                            <td>${caseInfo.subcategory}</td>
-                            <td>${caseInfo.detailOption}</td>
-                            <td>${caseInfo.extraDetails || ''}</td>
-                            <td><a href="${caseInfo.imageUrl}" target="_blank">查看圖片</a></td>
-                            <td>${caseInfo.latitude}</td>
-                            <td>${caseInfo.longitude}</td>
-                            <td>${new Date(caseInfo.uploadTime).toLocaleString()}</td>
-                            <td>
-                                <select class="form-control" data-case-id="${caseId}">
-                                    <option value="未處理" ${caseInfo.status === "未處理" ? "selected" : ""}>未處理</option>
-                                    <option value="處理中" ${caseInfo.status === "處理中" ? "selected" : ""}>處理中</option>
-                                    <option value="已處理" ${caseInfo.status === "已處理" ? "selected" : ""}>已處理</option>
-                                </select>
-                            </td>
-                            <td>
-                                <button class="btn btn-danger" data-case-id="${caseId}">刪除</button>
-                            </td>
-                        `;
-                        tbody.appendChild(tr);
-                    }
+        if (data && Object.keys(data).length > 0) {
+            let index = 1;
+            for (const caseId in data) {
+                const caseInfo = data[caseId];
+                if (caseInfo.status !== "已處理") {
+                    const tr = createCaseRow(index++, caseId, caseInfo);
+                    tbody.appendChild(tr);
                 }
-                addEventListenersToActiveCases();
-            } else {
-                tbody.innerHTML = "<tr><td colspan='12'>沒有進行中的案件</td></tr>";
             }
-        })
-        .catch(error => {
-            console.error("Error fetching active cases:", error);
-            document.getElementById("data-table-body").innerHTML = "<tr><td colspan='12'>加載數據時出錯</td></tr>";
-        });
+            addEventListenersToActiveCases();
+        } else {
+            tbody.innerHTML = "<tr><td colspan='12'>沒有進行中的案件</td></tr>";
+        }
+    } catch (error) {
+        console.error("Error fetching active cases:", error);
+        document.getElementById("data-table-body").innerHTML = "<tr><td colspan='12'>加載數據時出錯</td></tr>";
+    }
+}
+
+function createCaseRow(index, caseId, caseInfo) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+        <td>${index}</td>
+        <td>${caseInfo.userId}</td>
+        <td>${caseInfo.category}</td>
+        <td>${caseInfo.subcategory}</td>
+        <td>${caseInfo.detailOption}</td>
+        <td>${caseInfo.extraDetails || ''}</td>
+        <td><a href="${caseInfo.imageUrl}" target="_blank">查看圖片</a></td>
+        <td>${caseInfo.latitude}</td>
+        <td>${caseInfo.longitude}</td>
+        <td>${new Date(caseInfo.uploadTime).toLocaleString()}</td>
+        <td>
+            <select class="form-control" data-case-id="${caseId}">
+                <option value="未處理" ${caseInfo.status === "未處理" ? "selected" : ""}>未處理</option>
+                <option value="處理中" ${caseInfo.status === "處理中" ? "selected" : ""}>處理中</option>
+                <option value="已處理" ${caseInfo.status === "已處理" ? "selected" : ""}>已處理</option>
+            </select>
+        </td>
+        <td>
+            <button class="btn btn-primary" data-case-id="${caseId}">上傳照片</button>
+            <button class="btn btn-danger" data-case-id="${caseId}">刪除</button>
+        </td>
+    `;
+    return tr;
 }
 
 function loadCompletedCases() {
@@ -297,55 +454,6 @@ function updateDropdown(caseId, status) {
     if (selectElement) {
         selectElement.value = status;
     }
-}
-
-function loadActiveCases() {
-    fetch("/api/get-user-data")
-        .then(response => response.json())
-        .then(data => {
-            const tbody = document.getElementById("data-table-body");
-            tbody.innerHTML = "";
-            if (data) {
-                let index = 1;
-                for (const caseId in data) {
-                    const caseInfo = data[caseId];
-                    if (caseInfo.status !== "已處理") {
-                        const tr = document.createElement("tr");
-                        tr.innerHTML = `
-                            <td>${index++}</td>
-                            <td>${caseInfo.userId}</td>
-                            <td>${caseInfo.category}</td>
-                            <td>${caseInfo.subcategory}</td>
-                            <td>${caseInfo.detailOption}</td>
-                            <td>${caseInfo.extraDetails || ''}</td>
-                            <td><a href="${caseInfo.imageUrl}" target="_blank">查看圖片</a></td>
-                            <td>${caseInfo.latitude}</td>
-                            <td>${caseInfo.longitude}</td>
-                            <td>${new Date(caseInfo.uploadTime).toLocaleString()}</td>
-                            <td>
-                                <select class="form-control" data-case-id="${caseId}">
-                                    <option value="未處理" ${caseInfo.status === "未處理" ? "selected" : ""}>未處理</option>
-                                    <option value="處理中" ${caseInfo.status === "處理中" ? "selected" : ""}>處理中</option>
-                                    <option value="已處理" ${caseInfo.status === "已處理" ? "selected" : ""}>已處理</option>
-                                </select>
-                            </td>
-                            <td>
-                                <button class="btn btn-primary" data-case-id="${caseId}">上傳照片</button>
-                                <button class="btn btn-danger" data-case-id="${caseId}">刪除</button>
-                            </td>
-                        `;
-                        tbody.appendChild(tr);
-                    }
-                }
-                addEventListenersToActiveCases();
-            } else {
-                tbody.innerHTML = "<tr><td colspan='12'>沒有進行中的案件</td></tr>";
-            }
-        })
-        .catch(error => {
-            console.error("Error fetching active cases:", error);
-            tbody.innerHTML = "<tr><td colspan='12'>加載數據時出錯</td></tr>";
-        });
 }
 
 function handleStatusChange(event) {

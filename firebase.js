@@ -296,6 +296,57 @@ async function likeCase(caseId, userId) {
   }
 }
 
+// ... (previous code remains the same)
+
+async function recordUserLogin(userId) {
+  const userRef = db.ref('users').child(userId);
+  const performanceRef = db.ref('performance');
+  
+  try {
+    const userSnapshot = await userRef.once('value');
+    const userData = userSnapshot.val();
+
+    if (!userData) {
+      // This is a new user
+      await userRef.set({ lastLogin: Date.now() });
+      
+      // Increment unique users count
+      await performanceRef.child('uniqueUsers').transaction(currentCount => {
+        return (currentCount || 0) + 1;
+      });
+      
+      return { newUser: true };
+    } else {
+      // Existing user, just update last login
+      await userRef.update({ lastLogin: Date.now() });
+      return { newUser: false };
+    }
+  } catch (error) {
+    console.error('Error recording user login:', error);
+    throw error;
+  }
+}
+
+async function recordPageView() {
+  const performanceRef = db.ref('performance');
+  
+  try {
+    const result = await performanceRef.child('pageViews').transaction(currentCount => {
+      return (currentCount || 0) + 1;
+    });
+    
+    console.log('Page view transaction result:', result);
+    
+    return { 
+      success: true, 
+      increment: result.committed ? 1 : 0 
+    };
+  } catch (error) {
+    console.error('Error recording page view:', error);
+    throw error;
+  }
+}
+
 // 新增刪除資料的功能
 async function clearDatabase(path) {
   try { 
@@ -312,4 +363,4 @@ async function clearDatabase(path) {
 // // 示例：清空 users 路徑下的所有資料
 // clearDatabase('users');
 
-module.exports = { updateUserPoints, getUserPoints, uploadImage, getUserCases, deleteCase, clearDatabase, db, bucket, getCompletedCases, uploadCasePhoto, getInProgressCases, likeCase};
+module.exports = { updateUserPoints, getUserPoints, uploadImage, getUserCases, deleteCase, clearDatabase, db, bucket, getCompletedCases, uploadCasePhoto, getInProgressCases, likeCase, recordUserLogin, recordPageView};

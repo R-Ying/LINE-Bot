@@ -68,20 +68,11 @@ body {
     }
 
     .image-container {
-        width: 150px;
+        width: 150px;  /* 在小屏幕上稍微减小宽度 */
     }
-
     .additional-image {
-        height: 100px;
+        height: 120px;  /* 相应地减小高度 */
     }
-}
-
-.media-container {
-    display: flex;
-    overflow-x: auto;
-    gap: 10px;
-    padding: 10px 0;
-    scroll-snap-type: x mandatory;
 }
 
 .repair-image {
@@ -152,36 +143,44 @@ body {
     width: 100%;
 }
 
+.media-container {
+    display: flex;
+    flex-wrap: nowrap;  /* 防止换行 */
+    overflow-x: auto;  /* 允许横向滚动 */
+    gap: 10px;
+    padding: 10px 0;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+    width: 100%;  /* 确保容器占满父元素宽度 */
+}
+
+/* 更新 .image-container 样式 */
+.image-container {
+    flex: 0 0 auto;  /* 防止图片容器被压缩 */
+    width: 200px;  /* 固定宽度 */
+    scroll-snap-align: start;
+}
+
+.additional-image {
+    width: 100%;
+    height: 150px;  /* 固定高度 */
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+/* 确保 .case-item 不限制 .media-container 的宽度 */
 .case-item {
     border: 1px solid #e2e8f0;
     border-radius: 0.25rem;
     padding: 1rem;
     margin-bottom: 1rem;
-}
-
-.media-container {
-    display: flex;
-    overflow-x: auto;
-    gap: 10px;
-    padding: 10px 0;
-    -webkit-overflow-scrolling: touch;
-}
-
-.image-container {
-    flex: 0 0 auto;
-    width: 200px;
-}
-
-.additional-image {
-    width: 100%;
-    height: 150px;
-    object-fit: cover;
+    overflow-x: hidden;  /* 防止水平溢出 */
 }
 
 .image-description, .image-upload-time {
     margin: 5px 0;
     font-size: 0.9em;
-    white-space: normal; /* 確保文字可以換行 */
+    white-space: normal;
 }
 
 .image-upload-time {
@@ -189,7 +188,7 @@ body {
     font-size: 0.8em;
 }
 
-/* 美化滾動條 */
+/* 美化滚动条 */
 .media-container::-webkit-scrollbar {
     height: 8px;
 }

@@ -7,8 +7,10 @@
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script src='https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.js'></script>
     <link href='https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.css' rel='stylesheet' />
-    <link rel="stylesheet" href="style.css">
+    <!-- <link rel="stylesheet" href="style.css"> -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css" rel="stylesheet">
+    <!-- <link rel="stylesheet" href="styles/in_progress_liff.[contenthash].css"> -->
+    <%= htmlWebpackPlugin.tags.headTags %>
 </head>
 <body>
     <nav class="navbar">
@@ -23,6 +25,7 @@
     <div id="mapView" style="display: none;">
         <div id="fullMap" class="full-map-container"></div>
     </div>
-    <script src="in_progress_liff.bundle.js"></script>
+    <!-- <script src="in_progress_liff.bundle.js"></script> -->
+    <%= htmlWebpackPlugin.tags.headTags %>
 </body>
 </html>
