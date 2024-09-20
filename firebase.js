@@ -296,8 +296,6 @@ async function likeCase(caseId, userId) {
   }
 }
 
-// ... (previous code remains the same)
-
 async function recordUserLogin(userId) {
   const userRef = db.ref('users').child(userId);
   const performanceRef = db.ref('performance');
@@ -305,21 +303,36 @@ async function recordUserLogin(userId) {
   try {
     const userSnapshot = await userRef.once('value');
     const userData = userSnapshot.val();
+    const now = Date.now();
 
     if (!userData) {
-      // This is a new user
-      await userRef.set({ lastLogin: Date.now() });
+      // 這是一個新使用者
+      await userRef.set({ lastLogin: now, lastRecord: now });
       
-      // Increment unique users count
+      // 增加唯一使用者計數
       await performanceRef.child('uniqueUsers').transaction(currentCount => {
         return (currentCount || 0) + 1;
       });
       
-      return { newUser: true };
+      return { newUser: true, increment: 1 };
     } else {
-      // Existing user, just update last login
-      await userRef.update({ lastLogin: Date.now() });
-      return { newUser: false };
+      // 已存在的使用者，檢查是否需要更新記錄
+      const lastRecord = userData.lastRecord || 0;
+      const timeSinceLastRecord = now - lastRecord;
+      const isNextDay = new Date(now).getDate() !== new Date(lastRecord).getDate();
+
+      if (timeSinceLastRecord > 30 * 60 * 1000 || isNextDay) {
+        // 如果超過30分鐘或是隔天，更新記錄
+        await userRef.update({ lastLogin: now, lastRecord: now });
+        await performanceRef.child('uniqueUsers').transaction(currentCount => {
+          return (currentCount || 0) + 1;
+        });
+        return { newUser: false, increment: 1 };
+      } else {
+        // 只更新最後登入時間，不增加計數
+        await userRef.update({ lastLogin: now });
+        return { newUser: false, increment: 0 };
+      }
     }
   } catch (error) {
     console.error('Error recording user login:', error);

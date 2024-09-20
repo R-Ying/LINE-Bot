@@ -336,22 +336,11 @@ const recentPageViews = new Set();
 app.post('/api/record-user-login', async (req, res) => {
   const { userId } = req.body;
   console.log('Received login request for user:', userId);
-  
-  // Check if this login was recently recorded
-  if (recentLogins.has(userId)) {
-    console.log('Recent login detected for user:', userId);
-    return res.status(200).json({ message: 'Login already recorded', newUser: false });
-  }
 
   try {
     const result = await recordUserLogin(userId);
-    // Add to recent logins set
-    recentLogins.add(userId);
-    // Remove from set after 5 minutes
-    setTimeout(() => recentLogins.delete(userId), 5 * 60 * 1000);
-    
-    console.log('Login recorded for user:', userId);
-    res.status(200).json({ message: 'User login recorded successfully', newUser: result.newUser });
+    console.log('Login recorded for user:', userId, 'Result:', result);
+    res.status(200).json({ message: 'User login recorded successfully', newUser: result.newUser, increment: result.increment });
   } catch (error) {
     console.error('Error recording user login:', error);
     res.status(500).json({ error: 'Failed to record user login' });
