@@ -2,7 +2,7 @@ const express = require("express");
 const multer = require("multer");
 const fs = require("fs");
 const exec = require("child_process").exec;
-const { updateUserPoints, uploadImage, getUserCases, deleteCase, db, bucket, getCompletedCases, uploadCasePhoto, getInProgressCases, likeCase, recordUserLogin, recordPageView} = require("./firebase.js");
+const { updateUserPoints, uploadImage, getUserCases, deleteCase, db, bucket, getCompletedCases, uploadCasePhoto, getInProgressCases, likeCase, recordUserLogin, recordPageView, getDashboardData} = require("./firebase.js");
 const { bot, sendMessage } = require("./bot");
 const fetch = require("node-fetch");
 require('dotenv').config();
@@ -197,26 +197,28 @@ app.post("/api/upload-case-photo", upload.single("image"), async (req, res) => {
 app.post("/api/like-case", async (req, res) => {
   const { caseId, userId } = req.body;
   console.log(`Received like request for caseId: ${caseId}, userId: ${userId}`);
-
-  if (!caseId || !userId) {
-    console.warn("Invalid request: missing caseId or userId");
-    return res.status(400).json({ success: false, error: "缺少必要參數" });
-  }
-
+  
   try {
-    console.log(`Attempting to like case ${caseId} for user ${userId}`);
     const likes = await likeCase(caseId, userId);
-    console.log(`Successfully liked case ${caseId}. New like count: ${likes}`);
+    console.log(`Like operation successful. New likes count: ${likes}`);
     res.status(200).json({ success: true, likes });
   } catch (error) {
-    console.error("Error liking case:", error);
-    if (error.message === `Case ${caseId} not found`) {
-      res.status(404).json({ success: false, error: "找不到指定的案件" });
-    } else {
-      res.status(500).json({ success: false, error: "伺服器處理請求時發生錯誤", details: error.message });
-    }
+    console.error("Error in like-case route:", error);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
+
+// 更新獲取儀表板數據的路由
+app.get("/api/dashboard-data", async (req, res) => {
+  try {
+    const dashboardData = await getDashboardData();
+    res.json(dashboardData);
+  } catch (error) {
+    console.error("Error fetching dashboard data:", error);
+    res.status(500).json({ error: "Failed to fetch dashboard data" });
+  }
+});
+
 
 async function generateCaseId(category) {
   const categoryMap = {
@@ -257,53 +259,6 @@ app.get("/api/get-user-data", async (req, res) => {
   }
 });
 
-app.get("/api/dashboard-data", async (req, res) => {
-  try {
-    const casesSnapshot = await db.ref("cases").once("value");
-    const casesData = casesSnapshot.val() || {};
-
-    const performanceSnapshot = await db.ref("performance").once("value");
-    const performanceData = performanceSnapshot.val() || {};
-
-    let totalLikes = 0;
-    let likesData = {};
-
-    Object.values(casesData).forEach(caseData => {
-      totalLikes += caseData.likes || 0;
-      
-      if (!likesData[caseData.category]) {
-        likesData[caseData.category] = 0;
-      }
-      likesData[caseData.category] += caseData.likes || 0;
-    });
-
-    const likesDataArray = Object.entries(likesData).map(([category, likes]) => ({
-      category,
-      likes
-    }));
-
-    const usersSnapshot = await db.ref("users").once("value");
-    const usersData = usersSnapshot.val() || {};
-
-    const usersDataArray = Object.entries(usersData)
-      .map(([date, count]) => ({ date, count }))
-      .sort((a, b) => new Date(b.date) - new Date(a.date))
-      .slice(0, 7)
-      .reverse();
-
-    res.json({
-      totalLikes,
-      pageViews: performanceData.pageViews || 0,
-      uniqueUsers: performanceData.uniqueUsers || 0,
-      likesData: likesDataArray,
-      usersData: usersDataArray
-    });
-  } catch (error) {
-    console.error("Error fetching dashboard data:", error);
-    res.status(500).json({ error: "Failed to fetch dashboard data" });
-  }
-});
-
 app.post("/api/update-case-status", async (req, res) => {
   const { caseId, status } = req.body;
 
@@ -340,7 +295,7 @@ app.post('/api/record-user-login', async (req, res) => {
   try {
     const result = await recordUserLogin(userId);
     console.log('Login recorded for user:', userId, 'Result:', result);
-    res.status(200).json({ message: 'User login recorded successfully', newUser: result.newUser, increment: result.increment });
+    res.status(200).json({ message: 'User login recorded successfully', newUser: result.newUser, date: result.date });
   } catch (error) {
     console.error('Error recording user login:', error);
     res.status(500).json({ error: 'Failed to record user login' });
@@ -365,7 +320,7 @@ app.post('/api/record-page-view', async (req, res) => {
     setTimeout(() => recentPageViews.delete(requestId), 5 * 60 * 1000);
     
     console.log('Page view recorded:', requestId);
-    res.status(200).json({ message: 'Page view recorded successfully', increment: result.increment });
+    res.status(200).json({ message: 'Page view recorded successfully', increment: result.increment, date: result.date });
   } catch (error) {
     console.error('Error recording page view:', error);
     res.status(500).json({ error: 'Failed to record page view' });
@@ -388,6 +343,6 @@ async function getLocationFromAddress(address) {
   return null;
 }
 
-app.listen(process.env.PORT || 8080, () => {
+app.listen(process.env.PORT || 8080, async () => {
   console.log(`Server is running on port ${process.env.PORT || 8080}`);
 });

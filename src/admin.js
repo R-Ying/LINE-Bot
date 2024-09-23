@@ -1,4 +1,4 @@
-import Chart from 'chart.js/auto';
+// import Chart from 'chart.js/auto';
 
 let isSubmitting = false;
 let likesChart = null;
@@ -24,13 +24,27 @@ async function loadDashboardData() {
         const data = await response.json();
         console.log("Dashboard data received:", data);
 
-        document.getElementById('total-likes').textContent = data.totalLikes;
-        document.getElementById('page-views').textContent = data.pageViews;
-        document.getElementById('unique-users').textContent = data.uniqueUsers;
+        document.getElementById('total-likes').textContent = data.totalLikes || 0;
+        document.getElementById('page-views').textContent = data.totalPageViews || 0;
+        document.getElementById('unique-users').textContent = data.totalUniqueUsers || 0;
 
-        createLikesChart(data.likesData); // 如果没有数据，则保持不变
-        createPageViewsChart(data.pageViews); // 传递总页面浏览量
-        createUsersChart(data.uniqueUsers); // 传递唯一用户数
+        if (data.likesData && data.likesData.length > 0) {
+            createLikesChart(data.likesData);
+        } else {
+            console.warn("No likes data available for chart");
+        }
+
+        if (data.dailyUsersData && data.dailyUsersData.length > 0) {
+            createUsersChart(data.dailyUsersData);
+        } else {
+            console.warn("No daily users data available for chart");
+        }
+
+        if (data.dailyPageViewsData && data.dailyPageViewsData.length > 0) {
+            createPageViewsChart(data.dailyPageViewsData);
+        } else {
+            console.warn("No daily page views data available for chart");
+        }
 
     } catch (error) {
         console.error("Error loading dashboard data:", error);
@@ -82,76 +96,100 @@ function createLikesChart(likesData) {
     });
 }
 
-function createUsersChart(uniqueUsers) {
-    console.log("Creating users chart with value:", uniqueUsers);
-    const ctx = document.getElementById('usersChart').getContext('2d');
+function createUsersChart(usersData) {
+    console.log("Creating users chart with data:", usersData);
+    const ctx = document.getElementById('usersChart');
     
     if (usersChart) {
         usersChart.destroy();
     }
     
-    // 单一数据点的条形图（Bar Chart）
     usersChart = new Chart(ctx, {
-        type: 'bar',
+        type: 'line',
         data: {
-            labels: ['Unique Users'],  // 标签
             datasets: [{
-                label: '使用者數',
-                data: [uniqueUsers],  // 数据数组
-                backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                label: '每日使用者數',
+                data: usersData.map(d => ({ x: d.date, y: d.count })),
                 borderColor: 'rgba(75, 192, 192, 1)',
-                borderWidth: 1
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                tension: 0.1
             }]
         },
         options: {
             responsive: true,
             scales: {
+                x: {
+                    type: 'time',
+                    time: {
+                        unit: 'day'
+                    },
+                    title: {
+                        display: true,
+                        text: '日期'
+                    }
+                },
                 y: {
-                    beginAtZero: true
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: '使用者數'
+                    }
                 }
             },
             plugins: {
                 title: {
                     display: true,
-                    text: '唯一使用者數量'
+                    text: '使用者數趨勢'
                 }
             }
         }
     });
 }
 
-function createPageViewsChart(pageViews) {
-    console.log("Creating page views chart with value:", pageViews);
-    const ctx = document.getElementById('pageViewsChart').getContext('2d');
+function createPageViewsChart(pageViewsData) {
+    console.log("Creating page views chart with data:", pageViewsData);
+    const ctx = document.getElementById('pageViewsChart');
     
     if (pageViewsChart) {
         pageViewsChart.destroy();
     }
     
-    // 使用条形图展示单一数据点
     pageViewsChart = new Chart(ctx, {
-        type: 'bar',
+        type: 'line',
         data: {
-            labels: ['Page Views'], // 标签
             datasets: [{
-                label: '頁面瀏覽數',
-                data: [pageViews], // 数据数组
-                backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                label: '每日頁面瀏覽數',
+                data: pageViewsData.map(d => ({ x: d.date, y: d.views })),
                 borderColor: 'rgba(255, 99, 132, 1)',
-                borderWidth: 1
+                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                tension: 0.1
             }]
         },
         options: {
             responsive: true,
             scales: {
+                x: {
+                    type: 'time',
+                    time: {
+                        unit: 'day'
+                    },
+                    title: {
+                        display: true,
+                        text: '日期'
+                    }
+                },
                 y: {
-                    beginAtZero: true
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: '頁面瀏覽數'
+                    }
                 }
             },
             plugins: {
                 title: {
                     display: true,
-                    text: '總頁面瀏覽數'
+                    text: '頁面瀏覽量趨勢'
                 }
             }
         }
