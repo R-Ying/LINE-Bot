@@ -4,6 +4,7 @@ let gpsData = [];
 let updateCallback = null;
 let totalDistance = 0;
 let lastPosition = null;
+let watchId = null;
 
 function startRecording(callback) {
     isRecording = true;
@@ -26,17 +27,24 @@ function startRecording(callback) {
     }
     
     if ('geolocation' in navigator) {
-        navigator.geolocation.watchPosition(handleGPS, handleGPSError, {
+        watchId = navigator.geolocation.watchPosition(handleGPS, handleGPSError, {
             enableHighAccuracy: true,
             maximumAge: 0
         });
+    }
+
+    // 立即更新回調，顯示初始距離為0
+    if (updateCallback) {
+        updateCallback({ accelerometer: null, gps: null, distance: totalDistance });
     }
 }
 
 function stopRecording() {
     isRecording = false;
     window.removeEventListener('devicemotion', handleAccelerometer);
-    navigator.geolocation.clearWatch(watchId);
+    if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
+    }
 }
 
 function handleAccelerometer(event) {

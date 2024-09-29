@@ -178,44 +178,45 @@ document.addEventListener('DOMContentLoaded', function () {
     newFormSelect.innerHTML = '<option value="" disabled selected>選擇子項目內容</option>';
     const newFormOptions = getNewFormOptions(subcategory);
     newFormOptions.forEach(optionText => {
-      const option = document.createElement("option");
-      option.value = optionText;
-      option.text = optionText;
-      newFormSelect.appendChild(option);
+        const option = document.createElement("option");
+        option.value = optionText;
+        option.text = optionText;
+        newFormSelect.appendChild(option);
     });
 
     if (subcategory === 'iri') {
-      const recordingControls = document.createElement('div');
-      recordingControls.innerHTML = `
-          <button id="startRecording">開始記錄</button>
-          <button id="stopRecording" disabled>停止記錄</button>
-          <p id="recordingStatus">未記錄</p>
-          <div id="liveDataDisplay">
-              <h4>即時數據：</h4>
-              <p id="accelerometerData">加速度計：等待數據...</p>
-              <p id="gpsData">GPS：等待數據...</p>
-          </div>
-          <div id="recordedDataSummary"></div>
-      `;
-      newFormSelect.parentNode.appendChild(recordingControls);
+        const recordingControls = document.createElement('div');
+        recordingControls.innerHTML = `
+            <button id="startRecording">開始記錄</button>
+            <button id="stopRecording" disabled>停止記錄</button>
+            <p id="recordingStatus">未記錄</p>
+            <div id="liveDataDisplay">
+                <h4>即時數據：</h4>
+                <p id="accelerometerData">加速度計：等待數據...</p>
+                <p id="gpsData">GPS：等待數據...</p>
+                <p id="distanceData">總行駛距離：0.00 米</p>
+            </div>
+            <div id="recordedDataSummary"></div>
+        `;
+        newFormSelect.parentNode.appendChild(recordingControls);
 
-      document.getElementById('startRecording').addEventListener('click', () => {
-          startRecording(updateLiveData);
-          document.getElementById('startRecording').disabled = true;
-          document.getElementById('stopRecording').disabled = false;
-          document.getElementById('recordingStatus').textContent = '記錄中...';
-      });
+        document.getElementById('startRecording').addEventListener('click', () => {
+            startRecording(updateLiveData);
+            document.getElementById('startRecording').disabled = true;
+            document.getElementById('stopRecording').disabled = false;
+            document.getElementById('recordingStatus').textContent = '記錄中...';
+        });
 
-      document.getElementById('stopRecording').addEventListener('click', () => {
-          stopRecording();
-          document.getElementById('startRecording').disabled = false;
-          document.getElementById('stopRecording').disabled = true;
-          document.getElementById('recordingStatus').textContent = '記錄完成';
-          const data = getRecordedData();
-          displayRecordedDataSummary(data);
-      });
+        document.getElementById('stopRecording').addEventListener('click', () => {
+            stopRecording();
+            document.getElementById('startRecording').disabled = false;
+            document.getElementById('stopRecording').disabled = true;
+            document.getElementById('recordingStatus').textContent = '記錄完成';
+            const data = getRecordedData();
+            displayRecordedDataSummary(data);
+        });
     }
-  }
+}
 
   function populateDetailOptions(subcategory) {
     detailOptionsSelect.innerHTML = '<option value="" disabled selected>選擇具體內容</option>';
@@ -641,29 +642,32 @@ function updateLiveData(data) {
       document.getElementById('gpsData').textContent = 
           `GPS：緯度: ${data.gps.latitude.toFixed(6)}, 經度: ${data.gps.longitude.toFixed(6)}`;
   }
-  if (data.distance !== undefined) {
-      document.getElementById('distanceData').textContent = 
-          `總行駛距離：${data.distance.toFixed(2)} 米`;
-  }
+  document.getElementById('distanceData').textContent = 
+      `總行駛距離：${data.distance.toFixed(2)} 米`;
 }
 
 function displayRecordedDataSummary(data) {
   const summaryDisplay = document.getElementById('recordedDataSummary');
   summaryDisplay.innerHTML = '<h4>記錄數據摘要：</h4>';
 
-  const accDataSummary = summarizeData(data.accelerometer);
-  summaryDisplay.innerHTML += `
-      <p>加速度計數據點：${data.accelerometer.length}</p>
-      <p>X軸 - 最小：${accDataSummary.x.min.toFixed(2)}, 最大：${accDataSummary.x.max.toFixed(2)}, 平均：${accDataSummary.x.avg.toFixed(2)}</p>
-      <p>Y軸 - 最小：${accDataSummary.y.min.toFixed(2)}, 最大：${accDataSummary.y.max.toFixed(2)}, 平均：${accDataSummary.y.avg.toFixed(2)}</p>
-      <p>Z軸 - 最小：${accDataSummary.z.min.toFixed(2)}, 最大：${accDataSummary.z.max.toFixed(2)}, 平均：${accDataSummary.z.avg.toFixed(2)}</p>
-  `;
+  if (data.accelerometer && data.accelerometer.length > 0) {
+      const accDataSummary = summarizeData(data.accelerometer);
+      summaryDisplay.innerHTML += `
+          <p>加速度計數據點：${data.accelerometer.length}</p>
+          <p>X軸 - 最小：${accDataSummary.x.min.toFixed(2)}, 最大：${accDataSummary.x.max.toFixed(2)}, 平均：${accDataSummary.x.avg.toFixed(2)}</p>
+          <p>Y軸 - 最小：${accDataSummary.y.min.toFixed(2)}, 最大：${accDataSummary.y.max.toFixed(2)}, 平均：${accDataSummary.y.avg.toFixed(2)}</p>
+          <p>Z軸 - 最小：${accDataSummary.z.min.toFixed(2)}, 最大：${accDataSummary.z.max.toFixed(2)}, 平均：${accDataSummary.z.avg.toFixed(2)}</p>
+      `;
+  }
 
-  const gpsDataSummary = summarizeGPSData(data.gps);
-  summaryDisplay.innerHTML += `
-      <p>GPS數據點：${data.gps.length}</p>
-      <p>緯度範圍：${gpsDataSummary.lat.min.toFixed(6)} 到 ${gpsDataSummary.lat.max.toFixed(6)}</p>
-      <p>經度範圍：${gpsDataSummary.lng.min.toFixed(6)} 到 ${gpsDataSummary.lng.max.toFixed(6)}</p>
-      <p>總行駛距離：${data.totalDistance.toFixed(2)} 米</p>
-  `;
+  if (data.gps && data.gps.length > 0) {
+      const gpsDataSummary = summarizeGPSData(data.gps);
+      summaryDisplay.innerHTML += `
+          <p>GPS數據點：${data.gps.length}</p>
+          <p>緯度範圍：${gpsDataSummary.lat.min.toFixed(6)} 到 ${gpsDataSummary.lat.max.toFixed(6)}</p>
+          <p>經度範圍：${gpsDataSummary.lng.min.toFixed(6)} 到 ${gpsDataSummary.lng.max.toFixed(6)}</p>
+      `;
+  }
+
+  summaryDisplay.innerHTML += `<p>總行駛距離：${data.totalDistance.toFixed(2)} 米</p>`;
 }
