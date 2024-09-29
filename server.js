@@ -95,7 +95,7 @@ app.post("/detect", upload.single("image_file"), async function (req, res) {
   const fileName = `${Date.now()}-${req.file.originalname}`;
   const imageName = `images/${fileName}`;
 
-  const pythonProcess = exec("python main.py", function (error, stdout, stderr) {
+  const pythonProcess = exec("python3 main.py", function (error, stdout, stderr) {
       if (error) {
           console.error("error: " + error);
           res.json({ message: "Error", detail: error.message });

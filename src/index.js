@@ -2,6 +2,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import mapboxgl from 'mapbox-gl';
 import $ from 'jquery';
 import EXIF from 'exif-js';
+import { startRecording, stopRecording, getRecordedData } from './sensor_module.js';
 
 const LiffAppId = "2000183206-NjVg83LK";
 let selectedLatitude = null;
@@ -182,6 +183,38 @@ document.addEventListener('DOMContentLoaded', function () {
       option.text = optionText;
       newFormSelect.appendChild(option);
     });
+
+    if (subcategory === 'iri') {
+      const recordingControls = document.createElement('div');
+      recordingControls.innerHTML = `
+          <button id="startRecording">開始記錄</button>
+          <button id="stopRecording" disabled>停止記錄</button>
+          <p id="recordingStatus">未記錄</p>
+          <div id="liveDataDisplay">
+              <h4>即時數據：</h4>
+              <p id="accelerometerData">加速度計：等待數據...</p>
+              <p id="gpsData">GPS：等待數據...</p>
+          </div>
+          <div id="recordedDataSummary"></div>
+      `;
+      newFormSelect.parentNode.appendChild(recordingControls);
+
+      document.getElementById('startRecording').addEventListener('click', () => {
+          startRecording(updateLiveData);
+          document.getElementById('startRecording').disabled = true;
+          document.getElementById('stopRecording').disabled = false;
+          document.getElementById('recordingStatus').textContent = '記錄中...';
+      });
+
+      document.getElementById('stopRecording').addEventListener('click', () => {
+          stopRecording();
+          document.getElementById('startRecording').disabled = false;
+          document.getElementById('stopRecording').disabled = true;
+          document.getElementById('recordingStatus').textContent = '記錄完成';
+          const data = getRecordedData();
+          displayRecordedDataSummary(data);
+      });
+    }
   }
 
   function populateDetailOptions(subcategory) {
@@ -566,6 +599,12 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
 
+    if (subcategorySelect.value === 'iri') {
+      const sensorData = getRecordedData();
+      formData.append('accelerometerData', JSON.stringify(sensorData.accelerometer));
+      formData.append('gpsData', JSON.stringify(sensorData.gps));
+    }
+
     const formData = new FormData();
     formData.append("image_file", file);
     formData.append("latitude", selectedLatitude);
@@ -592,3 +631,34 @@ document.addEventListener('DOMContentLoaded', function () {
       });
   }
 });
+
+function updateLiveData(data) {
+  if (data.accelerometer) {
+      document.getElementById('accelerometerData').textContent = 
+          `加速度計：X: ${data.accelerometer.x.toFixed(2)}, Y: ${data.accelerometer.y.toFixed(2)}, Z: ${data.accelerometer.z.toFixed(2)}`;
+  }
+  if (data.gps) {
+      document.getElementById('gpsData').textContent = 
+          `GPS：緯度: ${data.gps.latitude.toFixed(6)}, 經度: ${data.gps.longitude.toFixed(6)}`;
+  }
+}
+
+function displayRecordedDataSummary(data) {
+  const summaryDisplay = document.getElementById('recordedDataSummary');
+  summaryDisplay.innerHTML = '<h4>記錄數據摘要：</h4>';
+
+  const accDataSummary = summarizeData(data.accelerometer);
+  summaryDisplay.innerHTML += `
+      <p>加速度計數據點：${data.accelerometer.length}</p>
+      <p>X軸 - 最小：${accDataSummary.x.min.toFixed(2)}, 最大：${accDataSummary.x.max.toFixed(2)}, 平均：${accDataSummary.x.avg.toFixed(2)}</p>
+      <p>Y軸 - 最小：${accDataSummary.y.min.toFixed(2)}, 最大：${accDataSummary.y.max.toFixed(2)}, 平均：${accDataSummary.y.avg.toFixed(2)}</p>
+      <p>Z軸 - 最小：${accDataSummary.z.min.toFixed(2)}, 最大：${accDataSummary.z.max.toFixed(2)}, 平均：${accDataSummary.z.avg.toFixed(2)}</p>
+  `;
+
+  const gpsDataSummary = summarizeGPSData(data.gps);
+  summaryDisplay.innerHTML += `
+      <p>GPS數據點：${data.gps.length}</p>
+      <p>緯度範圍：${gpsDataSummary.lat.min.toFixed(6)} 到 ${gpsDataSummary.lat.max.toFixed(6)}</p>
+      <p>經度範圍：${gpsDataSummary.lng.min.toFixed(6)} 到 ${gpsDataSummary.lng.max.toFixed(6)}</p>
+  `;
+}
