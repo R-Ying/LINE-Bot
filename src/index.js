@@ -641,6 +641,10 @@ function updateLiveData(data) {
       document.getElementById('gpsData').textContent = 
           `GPS：緯度: ${data.gps.latitude.toFixed(6)}, 經度: ${data.gps.longitude.toFixed(6)}`;
   }
+  if (data.distance !== undefined) {
+      document.getElementById('distanceData').textContent = 
+          `總行駛距離：${data.distance.toFixed(2)} 米`;
+  }
 }
 
 function displayRecordedDataSummary(data) {
@@ -660,5 +664,6 @@ function displayRecordedDataSummary(data) {
       <p>GPS數據點：${data.gps.length}</p>
       <p>緯度範圍：${gpsDataSummary.lat.min.toFixed(6)} 到 ${gpsDataSummary.lat.max.toFixed(6)}</p>
       <p>經度範圍：${gpsDataSummary.lng.min.toFixed(6)} 到 ${gpsDataSummary.lng.max.toFixed(6)}</p>
+      <p>總行駛距離：${data.totalDistance.toFixed(2)} 米</p>
   `;
 }

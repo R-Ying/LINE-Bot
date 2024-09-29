@@ -2,11 +2,15 @@ let isRecording = false;
 let accelerometerData = [];
 let gpsData = [];
 let updateCallback = null;
+let totalDistance = 0;
+let lastPosition = null;
 
 function startRecording(callback) {
     isRecording = true;
     accelerometerData = [];
     gpsData = [];
+    totalDistance = 0;
+    lastPosition = null;
     updateCallback = callback;
     
     if (typeof DeviceMotionEvent.requestPermission === 'function') {
@@ -45,7 +49,7 @@ function handleAccelerometer(event) {
         };
         accelerometerData.push(newData);
         if (updateCallback) {
-            updateCallback({ accelerometer: newData, gps: gpsData[gpsData.length - 1] });
+            updateCallback({ accelerometer: newData, gps: gpsData[gpsData.length - 1], distance: totalDistance });
         }
     }
 }
@@ -58,20 +62,42 @@ function handleGPS(position) {
             timestamp: new Date().getTime()
         };
         gpsData.push(newData);
+        
+        if (lastPosition) {
+            totalDistance += calculateDistance(lastPosition, newData);
+        }
+        lastPosition = newData;
+        
         if (updateCallback) {
-            updateCallback({ accelerometer: accelerometerData[accelerometerData.length - 1], gps: newData });
+            updateCallback({ accelerometer: accelerometerData[accelerometerData.length - 1], gps: newData, distance: totalDistance });
         }
     }
 }
 
 function handleGPSError(error) {
-    console.warn(`GPS错误 (${error.code}): ${error.message}`);
+    console.warn(`GPS錯誤 (${error.code}): ${error.message}`);
+}
+
+function calculateDistance(pos1, pos2) {
+    const R = 6371e3; // 地球半徑（米）
+    const φ1 = pos1.latitude * Math.PI/180;
+    const φ2 = pos2.latitude * Math.PI/180;
+    const Δφ = (pos2.latitude - pos1.latitude) * Math.PI/180;
+    const Δλ = (pos2.longitude - pos1.longitude) * Math.PI/180;
+
+    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+              Math.cos(φ1) * Math.cos(φ2) *
+              Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+    return R * c; // 以米為單位的距離
 }
 
 function getRecordedData() {
     return {
         accelerometer: accelerometerData,
-        gps: gpsData
+        gps: gpsData,
+        totalDistance: totalDistance
     };
 }
 
