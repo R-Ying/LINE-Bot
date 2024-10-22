@@ -3,6 +3,9 @@ import mapboxgl from 'mapbox-gl';
 import $ from 'jquery';
 import EXIF from 'exif-js';
 import { startRecording, stopRecording, getRecordedData } from './sensor_module.js';
+import VConsole from 'vconsole';
+const vConsole = new VConsole();
+console.log('vConsole 已啟動');
 
 const LiffAppId = "2000183206-NjVg83LK";
 let selectedLatitude = null;
@@ -175,17 +178,59 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function populateNewFormOptions(subcategory) {
-    newFormSelect.innerHTML = '<option value="" disabled selected>選擇子項目內容</option>';
-    const newFormOptions = getNewFormOptions(subcategory);
-    newFormOptions.forEach(optionText => {
-        const option = document.createElement("option");
-        option.value = optionText;
-        option.text = optionText;
-        newFormSelect.appendChild(option);
-    });
+    // 如果選擇的是 IRI，隱藏 newFormSelect 並自動選擇 detailOptionsSelect 的值
+    if (subcategory === 'iri') {
+        newFormSelect.style.display = 'none';
+        detailOptionsSelect.style.display = 'block';
+
+        // 清空 detailOptionsSelect 並選擇一個預設值
+        detailOptionsSelect.innerHTML = '<option value="" disabled selected>選擇具體內容</option>';
+        const detailOptions = getDetailOptions('使用檢測車檢測道路之平坦度');
+        detailOptions.forEach(optionText => {
+            const option = document.createElement("option");
+            option.value = optionText;
+            option.text = optionText;
+            detailOptionsSelect.appendChild(option);
+        });
+
+        // 預設選擇第一個 detailOptions 項目
+        if (detailOptions.length > 0) {
+            detailOptionsSelect.value = detailOptions[0];
+            updateExampleImages(detailOptions[0]); // 自動更新示例圖片
+        }
+    } else {
+        newFormSelect.style.display = 'block';
+        detailOptionsSelect.style.display = 'block';
+
+        // 清空並重新填充 newFormSelect 的選項
+        newFormSelect.innerHTML = '<option value="" disabled selected>選擇子項目內容</option>';
+        const newFormOptions = getNewFormOptions(subcategory);
+        newFormOptions.forEach(optionText => {
+            const option = document.createElement("option");
+            option.value = optionText;
+            option.text = optionText;
+            newFormSelect.appendChild(option);
+        });
+
+        detailOptionsSelect.innerHTML = '<option value="" disabled selected>選擇具體內容</option>';
+        const detailOptions = getDetailOptions(subcategory);
+        detailOptions.forEach(optionText => {
+            const option = document.createElement("option");
+            option.value = optionText;
+            option.text = optionText;
+            detailOptionsSelect.appendChild(option);
+        });
+    }
 
     if (subcategory === 'iri') {
+        // 移除先前的錄音控制區域，避免重複添加
+        const existingControls = document.getElementById('recordingControls');
+        if (existingControls) {
+            existingControls.remove();
+        }
+
         const recordingControls = document.createElement('div');
+        recordingControls.id = 'recordingControls';
         recordingControls.innerHTML = `
             <button id="startRecording">開始記錄</button>
             <button id="stopRecording" disabled>停止記錄</button>
@@ -195,26 +240,33 @@ document.addEventListener('DOMContentLoaded', function () {
                 <p id="accelerometerData">加速度計：等待數據...</p>
                 <p id="gpsData">GPS：等待數據...</p>
                 <p id="distanceData">總行駛距離：0.00 米</p>
+                <p id="ariData">ARI：尚未計算</p>
             </div>
             <div id="recordedDataSummary"></div>
         `;
         newFormSelect.parentNode.appendChild(recordingControls);
 
-        document.getElementById('startRecording').addEventListener('click', () => {
+        // 定義開始和停止記錄的事件處理器
+        function startRecordingHandler() {
+            console.log('開始記錄');
             startRecording(updateLiveData);
             document.getElementById('startRecording').disabled = true;
             document.getElementById('stopRecording').disabled = false;
             document.getElementById('recordingStatus').textContent = '記錄中...';
-        });
+        }
 
-        document.getElementById('stopRecording').addEventListener('click', () => {
+        function stopRecordingHandler() {
+            console.log('停止記錄');
             stopRecording();
             document.getElementById('startRecording').disabled = false;
             document.getElementById('stopRecording').disabled = true;
             document.getElementById('recordingStatus').textContent = '記錄完成';
             const data = getRecordedData();
-            displayRecordedDataSummary(data);
-        });
+        }
+
+        // 為按鈕添加事件監聽器
+        document.getElementById('startRecording').addEventListener('click', startRecordingHandler);
+        document.getElementById('stopRecording').addEventListener('click', stopRecordingHandler);
     }
 }
 
@@ -644,30 +696,12 @@ function updateLiveData(data) {
   }
   document.getElementById('distanceData').textContent = 
       `總行駛距離：${data.distance.toFixed(2)} 米`;
-}
 
-function displayRecordedDataSummary(data) {
-  const summaryDisplay = document.getElementById('recordedDataSummary');
-  summaryDisplay.innerHTML = '<h4>記錄數據摘要：</h4>';
-
-  if (data.accelerometer && data.accelerometer.length > 0) {
-      const accDataSummary = summarizeData(data.accelerometer);
-      summaryDisplay.innerHTML += `
-          <p>加速度計數據點：${data.accelerometer.length}</p>
-          <p>X軸 - 最小：${accDataSummary.x.min.toFixed(2)}, 最大：${accDataSummary.x.max.toFixed(2)}, 平均：${accDataSummary.x.avg.toFixed(2)}</p>
-          <p>Y軸 - 最小：${accDataSummary.y.min.toFixed(2)}, 最大：${accDataSummary.y.max.toFixed(2)}, 平均：${accDataSummary.y.avg.toFixed(2)}</p>
-          <p>Z軸 - 最小：${accDataSummary.z.min.toFixed(2)}, 最大：${accDataSummary.z.max.toFixed(2)}, 平均：${accDataSummary.z.avg.toFixed(2)}</p>
-      `;
-  }
-
-  if (data.gps && data.gps.length > 0) {
-      const gpsDataSummary = summarizeGPSData(data.gps);
-      summaryDisplay.innerHTML += `
-          <p>GPS數據點：${data.gps.length}</p>
-          <p>緯度範圍：${gpsDataSummary.lat.min.toFixed(6)} 到 ${gpsDataSummary.lat.max.toFixed(6)}</p>
-          <p>經度範圍：${gpsDataSummary.lng.min.toFixed(6)} 到 ${gpsDataSummary.lng.max.toFixed(6)}</p>
-      `;
-  }
-
-  summaryDisplay.innerHTML += `<p>總行駛距離：${data.totalDistance.toFixed(2)} 米</p>`;
+      if (data.ARI !== null && data.ARI !== undefined) {
+        document.getElementById('ariData').textContent = 
+            `ARI：${data.ARI.toFixed(4)}`;
+    } else {
+        document.getElementById('ariData').textContent = 
+            `ARI：尚未計算或數據不足`;
+    }
 }
