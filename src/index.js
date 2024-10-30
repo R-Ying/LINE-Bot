@@ -530,12 +530,12 @@ document.addEventListener('DOMContentLoaded', function () {
         worst: "/images/阻礙情況-差.png"
       },
       "無障礙設施": {
-        best: "/images/無障礙設施-優.png",
-        worst: "/images/無障礙設施-差.png"
+        best: "/images/無障礙設施-優1.png",
+        worst: "/images/無障礙設施-差1.png"
       },
       "人行道人行空間淨高": {
-        best: "/images/淨高-優.png",
-        worst: "/images/淨高-差.png"
+        best: "/images/淨高-優1.png",
+        worst: "/images/淨高-差1.png"
       },
       "整潔維護": {
         best: "/images/整潔維護-優.png",
@@ -550,12 +550,12 @@ document.addEventListener('DOMContentLoaded', function () {
         worst: "/images/全盲評級-差.png"
       },
       "鋪面狀況": {
-        best: "/images/鋪面狀況-優.png",
-        worst: "/images/鋪面狀況-差.png"
+        best: "/images/鋪面狀況-優1.png",
+        worst: "/images/鋪面狀況-差1.png"
       },
       "行人防護設施建置及維護狀況": {
-        best: "/images/人行道-優.png",
-        worst: "/images/人行道-差.png"
+        best: "/images/人行道-優1.png",
+        worst: "/images/人行道-差1.png"
       },
       "人行道上設置排水溝清掃孔": {
         best: "/images/鋪面狀況-優.png",
@@ -570,16 +570,16 @@ document.addEventListener('DOMContentLoaded', function () {
         worst: "/images/串聯性-差.png"
       },
       "交通標誌標示內容之正確性、辨識度或損壞狀況": {
-        best: "/images/交通標誌-優.png",
-        worst: "/images/交通標誌-差.png"
+        best: "/images/交通標誌-優1.png",
+        worst: "/images/交通標誌-差1.png"
       },
       "交通標線劃設之適當性及辨識度": {
-        best: "/images/交通標線-優.png",
-        worst: "/images/交通標線-差.png"
+        best: "/images/交通標線-優1.png",
+        worst: "/images/交通標線-差1.png"
       },
       "交通號誌設施之設置適當性、功能性、損壞狀況": {
-        best: "/images/交通號誌-優.png",
-        worst: "/images/交通號誌-差.png"
+        best: "/images/交通號誌-優1.png",
+        worst: "/images/交通號誌-差1.png"
       },
       "提升行人及自行車安全相關交通設施": {
         best: "/images/行人及自行車-優.png",
