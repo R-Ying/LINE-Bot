@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>案件展示</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css" rel="stylesheet">
+
+    <style>
+        /* 案件樣式 */
+        .case-item {
+            border: 1px solid #e2e8f0;
+            border-radius: 0.375rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background-color: #fff;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        /* ----------- 橫向捲動圖片容器 ----------- */
+        .media-container {
+            display: flex;
+            overflow-x: auto; /* 關鍵：啟用水平捲動 */
+            gap: 10px;
+            padding: 8px 0;
+            margin: 12px 0;
+            scroll-behavior: smooth; /* 平滑捲動 */
+            -webkit-overflow-scrolling: touch; /* iOS平滑捲動 */
+            scrollbar-width: thin;
+        }
+
+        /* 圖片容器樣式 */
+        .image-container {
+            flex: 0 0 auto; /* 不縮放、不擴展 */
+            width: 150px;
+            position: relative;
+        }
+
+        /* 圖片樣式 */
+        .additional-image, .repair-image {
+            width: 150px;
+            height: 150px;
+            object-fit: cover; /* 保持圖片比例 */
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: block; /* 確保圖片以塊級元素顯示 */
+        }
+
+        /* 圖片描述 */
+        .image-description {
+            font-size: 13px;
+            margin: 5px 0 2px 0;
+            text-align: center;
+            width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* 上傳時間 */
+        .image-upload-time {
+            font-size: 11px;
+            color: #666;
+            margin: 0;
+            text-align: center;
+            width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* 美化捲動條 */
+        .media-container::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .media-container::-webkit-scrollbar-thumb {
+            background-color: #ccc;
+            border-radius: 3px;
+        }
+
+        .media-container::-webkit-scrollbar-track {
+            background-color: #f5f5f5;
+        }
+
+        /* 按讚按鈕樣式 */
+        .like-button {
+            background: none;
+            border: 1px solid #e0e0e0;
+            border-radius: 20px;
+            padding: 5px 15px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 10px;
+        }
+
+        .like-button:hover {
+            background-color: #f5f5f5;
+        }
+
+        .like-button i {
+            margin-right: 5px;
+            color: #666;
+        }
+
+        .like-button.liked i {
+            color: #1e88e5;
+        }
+
+        .like-count {
+            font-weight: bold;
+        }
+
+        /* 評論區塊樣式 */
+        .comments-section {
+            margin-top: 15px;
+            border-top: 1px solid #e0e0e0;
+            padding-top: 10px;
+        }
+
+        .comments-toggle {
+            background-color: #f0f0f0;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+        }
+
+        .comments-toggle i {
+            margin-right: 5px;
+        }
+
+        .comments-container {
+            margin-top: 10px;
+            display: none;
+        }
+
+        .comments-container.show {
+            display: block;
+        }
+
+        .comment {
+            border-bottom: 1px solid #f0f0f0;
+            padding: 10px 0;
+        }
+
+        .comment-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .comment-user {
+            font-weight: bold;
+        }
+
+        .comment-time {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .comment-text {
+            margin: 5px 0;
+        }
+
+        .comment-actions {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .comment-like {
+            background: none;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            font-size: 12px;
+        }
+
+        .comment-like i {
+            margin-right: 3px;
+        }
+
+        .comment-like.liked {
+            color: #1e88e5;
+        }
+
+        .comment-form {
+            margin-top: 10px;
+            display: flex;
+        }
+
+        .comment-input {
+            flex-grow: 1;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            padding: 8px 15px;
+            margin-right: 10px;
+        }
+
+        .comment-submit {
+            background-color: #1e88e5;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 8px 15px;
+            cursor: pointer;
+        }
+
+        .no-comments {
+            text-align: center;
+            color: #888;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 先載入 LIFF SDK 確保它在 DOM 載入完成前就可用 -->
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
+    
+    <div class="container mt-4">
+        <h1>案件展示</h1>
+        <div id="casesContainer" class="mt-3">
+            <!-- 顯示載入訊息 -->
+            <p class="text-center">載入案件中，請稍候...</p>
+        </div>
+    </div>
+
+    <!-- 然後載入應用程式的 JavaScript -->
+    <script src="./achievement_liff.js"></script>
+</body>
+</html>

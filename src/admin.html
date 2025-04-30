@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>後台管理系統</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1.0.1/dist/chartjs-adapter-moment.min.js"></script>
+</head>
+    <!-- <link href="style.css" rel="stylesheet"> -->
+</head>
+<body>
+    <div class="container-fluid">
+        <h1 class="mt-4 mb-4">後台管理系統</h1>
+
+        <ul class="nav nav-tabs" id="myTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard" type="button" role="tab" aria-controls="dashboard" aria-selected="true">儀表板</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="active-cases-tab" data-bs-toggle="tab" data-bs-target="#active-cases" type="button" role="tab" aria-controls="active-cases" aria-selected="false">進行中的案件</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="completed-cases-tab" data-bs-toggle="tab" data-bs-target="#completed-cases" type="button" role="tab" aria-controls="completed-cases" aria-selected="false">已完成的案件</button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="myTabContent">
+            <div class="tab-pane fade show active" id="dashboard" role="tabpanel" aria-labelledby="dashboard-tab">
+                <div class="row mt-4">
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">總點讚數</h5>
+                                <p id="total-likes" class="card-text">載入中...</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">網頁瀏覽人數</h5>
+                                <p id="page-views" class="card-text">載入中...</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">使用者數</h5>
+                                <p id="unique-users" class="card-text">載入中...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">各類別點讚數</h5>
+                                <canvas id="likesChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">使用者數趨勢</h5>
+                                <canvas id="usersChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">頁面瀏覽量趨勢</h5>
+                                <canvas id="pageViewsChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="active-cases" role="tabpanel" aria-labelledby="active-cases-tab">
+                <div class="table-wrapper">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>案件編號</th>
+                                <th>使用者ID</th>
+                                <th>回報類型</th>
+                                <th>回報細項</th>
+                                <th>具體內容</th>
+                                <th>補充說明</th>
+                                <th>圖片</th>
+                                <th>緯度</th>
+                                <th>經度</th>
+                                <th>時間</th>
+                                <th>狀態</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="data-table-body">
+                            <!-- 進行中的案件將在這裡動態加載 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="completed-cases" role="tabpanel" aria-labelledby="completed-cases-tab">
+                <div class="table-wrapper">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>案件編號</th>
+                                <th>回報類型</th>
+                                <th>回報細項</th>
+                                <th>具體內容</th>
+                                <th>補充說明</th>
+                                <th>圖片</th>
+                                <th>緯度</th>
+                                <th>經度</th>
+                                <th>時間</th>
+                                <th>報修時間</th>
+                                <th>回復時間</th>
+                                <th>維修廠商</th>
+                                <th>報修到回復的時間</th>
+                                <th>施工後圖片</th>
+                            </tr>
+                        </thead>
+                        <tbody id="completed-table-body">
+                            <!-- 已完成的案件將在這裡動態加載 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="repairModal" tabindex="-1" aria-labelledby="repairModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="repairModalLabel">案件報修資訊</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="repairForm">
+                        <div class="mb-3">
+                            <label for="reportTime" class="form-label">報修時間</label>
+                            <input type="datetime-local" class="form-control" id="reportTime" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="responseTime" class="form-label">回復時間</label>
+                            <input type="datetime-local" class="form-control" id="responseTime" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="repairVendor" class="form-label">維修廠商</label>
+                            <input type="text" class="form-control" id="repairVendor" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="repairImage" class="form-label">上傳施工後照片</label>
+                            <input type="file" class="form-control" id="repairImage" accept="image/*">
+                        </div>
+                        <input type="hidden" id="caseId">
+                        <button type="submit" class="btn btn-primary">提交</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="uploadPhotoModal" tabindex="-1" aria-labelledby="uploadPhotoModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="uploadPhotoModalLabel">上傳施工照片</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="uploadPhotoForm">
+                        <div class="mb-3">
+                            <label for="photoFile" class="form-label">選擇照片</label>
+                            <input type="file" class="form-control" id="photoFile" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="photoDescription" class="form-label">進度內容記錄</label>
+                            <textarea class="form-control" id="photoDescription" rows="3"></textarea>
+                        </div>
+                        <input type="hidden" id="uploadPhotoCaseId">
+                        <button type="submit" class="btn btn-primary">上傳</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
