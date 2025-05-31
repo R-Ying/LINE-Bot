@@ -1,6 +1,5 @@
 import 'mapbox-gl/dist/mapbox-gl.css';
 import mapboxgl from 'mapbox-gl';
-import $ from 'jquery';
 import EXIF from 'exif-js';
 import { startRecording, stopRecording, getRecordedData } from './sensor_module.js';
 
