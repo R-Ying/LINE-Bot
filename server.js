@@ -66,6 +66,53 @@ app.get("/api/get-completed-cases", async (req, res) => {
   }
 });
 
+app.post("/check-image", upload.single("image_file"), async function (req, res) {
+    const imageFilePath = req.file.path;
+    
+    try {
+        // 使用Python模型檢查圖片內容
+        const pythonResult = await new Promise((resolve, reject) => {
+            const pythonProcess = exec("python3 main.py", function (error, stdout) {
+                if (error) {
+                    console.error("Python model error:", error);
+                    reject(error);
+                    return;
+                }
+                resolve(stdout.trim());
+            });
+            pythonProcess.stdin.write(imageFilePath);
+            pythonProcess.stdin.end();
+        });
+
+        // 返回檢查結果
+        if (pythonResult === "Success") {
+            res.json({ 
+                message: "Success", 
+                detail: "圖片符合標準" 
+            });
+        } else {
+            res.json({ 
+                message: "Fail", 
+                detail: "圖片不符合標準，請重新上傳" 
+            });
+        }
+
+    } catch (error) {
+        console.error("Error checking image:", error);
+        res.status(500).json({ 
+            message: "Fail", 
+            detail: "檢查圖片時發生錯誤" 
+        });
+    } finally {
+        // 清理臨時檔案
+        if (imageFilePath) {
+            fs.unlink(imageFilePath, (err) => {
+                if (err) console.error("Error deleting temp file:", err);
+            });
+        }
+    }
+});
+
 app.post("/detect", upload.single("image_file"), async function (req, res) {
   const imageFilePath = req.file.path;
   let { 
@@ -87,30 +134,6 @@ app.post("/detect", upload.single("image_file"), async function (req, res) {
               detail: "無法讀取圖片位置" 
           });
       }
-
-      // 使用Python模型先篩選圖片內容
-      const pythonResult = await new Promise((resolve, reject) => {
-          const pythonProcess = exec("python3 main.py", function (error, stdout) {
-              if (error) {
-                  console.error("Python model error:", error);
-                  reject(error);
-                  return;
-              }
-              resolve(stdout.trim());
-          });
-          pythonProcess.stdin.write(imageFilePath);
-          pythonProcess.stdin.end();
-      });
-
-      // 如果Python模型返回失敗，則直接返回錯誤訊息
-      if (pythonResult !== "Success") {
-          return res.json({ 
-              message: "Fail", 
-              detail: "圖片不符合標準，請重新上傳" 
-          });
-      }
-
-      // 通過Python模型檢查後，繼續處理
       
       // 確認必要資料欄位
       if (!category) {
