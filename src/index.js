@@ -22,7 +22,8 @@ const categoryTranslations = {
 const subcategoryTranslations = {
   cleanliness: "道路整潔",
   drainage: "整體排水",
-  iri: "IRI 平坦度",
+  roughness: "平坦度",
+  damage_condition: "道路損壞情況",
   smoothness: "暢行性",
   comfort: "舒適性",
   safety: "安全性",
@@ -227,8 +228,8 @@ function clearCurrentImageAndStatus() {
     const file = document.getElementById("uploadInput").files[0];
     const subcategory = subcategoryTranslations[document.getElementById("subcategorySelect").value];
     
-    // 如果是 IRI 測量，不需要檢查圖片位置
-    if (subcategory === 'IRI 平坦度' || subcategory === 'iri') {
+    // 如果是平坦度測量，不需要檢查圖片位置
+    if (subcategory === 'roughness') {
         submitButton.disabled = false;
         submitButton.textContent = "提交回報";
         return;
@@ -277,7 +278,7 @@ function clearCurrentImageAndStatus() {
       } else {
         alert(result.detail);
         const subcategory = formData.get("subcategory");
-        if (subcategory !== "IRI 平坦度" && subcategory !== "iri") {
+        if (subcategory !== "roughness") {
           showMap();
         }
         return false;
@@ -309,8 +310,7 @@ function clearCurrentImageAndStatus() {
       const category = categoryTranslations[categorySelect.value];
       const subcategory = subcategoryTranslations[subcategorySelect.value];
 
-      if (subcategory === "IRI 平坦度" || subcategory === "iri") {
-        console.log("Processing IRI measurement submission");
+      if (subcategory === "roughness") {
         const recordedData = getRecordedData();
 
         if (
@@ -328,13 +328,13 @@ function clearCurrentImageAndStatus() {
           return;
         }
 
-        // 添加 IRI 相關資料
+        // 添加平坦度相關資料
         Object.entries({
           userId,
           category,
           subcategory,
           newFormOption: "使用檢測車檢測道路之平坦度",
-          detailOption: "IRI 數值測量",
+          detailOption: "ARI 數值測量",
           extraDetails: `總距離: ${recordedData.totalDistance.toFixed(
             2
           )}米, 最終ARI: ${
@@ -445,7 +445,7 @@ function clearCurrentImageAndStatus() {
     // 重置位置狀態
     resetLocationStatus();
 
-    // 重置 IRI 相關顯示
+    // 重置平坦度相關顯示
     const recordingStatus = document.getElementById("recordingStatus");
     if (recordingStatus) {
       recordingStatus.textContent = "未記錄";
@@ -497,8 +497,8 @@ function clearCurrentImageAndStatus() {
     const recordingControls = document.getElementById("recordingControls");
     const newFormContainer = document.getElementById("newFormContainer");
 
-    // 如果選擇的是 IRI
-    if (subcategory === "iri") {
+    // 如果選擇的是平坦度
+    if (subcategory === "roughness") {
       // 隱藏不需要的元素
       detailOptionsContainer.style.display = "none";
       imageUploadContainer.style.display = "none";
@@ -597,7 +597,8 @@ function clearCurrentImageAndStatus() {
       road_maintenance: [
         { value: "cleanliness", text: "道路整潔" },
         { value: "drainage", text: "整體排水" },
-        { value: "iri", text: "IRI 平坦度" },
+        { value: "roughness", text: "平坦度" },
+        { value: "damage_condition", text: "道路損壞情形" }
       ],
       pedestrian_environment: [
         { value: "smoothness", text: "暢行性" },
@@ -635,7 +636,11 @@ function clearCurrentImageAndStatus() {
         "排水設施結構體、水溝蓋板或預鑄蓋板損壞情況",
         "溝內通水狀況",
       ],
-      iri: ["使用檢測車檢測道路之平坦度"],
+      roughness: ["使用檢測車檢測道路之平坦度"],
+      damage_condition: [
+  "道路鋪面表面平整或管線挖埋回填後鋪面表面平整",
+  "鋪面與人孔蓋、排水溝蓋銜接處狀況"
+],
       smoothness: [
         "淨寬(步行寬度)=人行道整體寬度-(公共設施帶寬度 或 機車停車格位寬度 或 天橋、地下道出入口寬度)",
         "阻礙情況",
@@ -691,11 +696,17 @@ function clearCurrentImageAndStatus() {
         "溝內雜物或淤泥阻塞，嚴重影響排水功能",
         "無此設施或喪失排水功能",
       ],
-      使用檢測車檢測道路之平坦度: [
-        "IRI 4.0以下",
-        "IRI 5.0以下",
-        "IRI 6.0以下",
-        "IRI 超過6.0",
+      道路鋪面表面平整或管線挖埋回填後鋪面表面平整: [
+        "該路段鋪面平整、無管線挖埋回填或挖埋回填後鋪面表面仍平整",
+        "部分鋪面不平整（輕微坑洞、龜裂、車轍、有粒料剝落分離、冒油等損壞現象）、或挖埋回填後表面不平整",
+        "多數區域不平整",
+        "全區路段破壞嚴重"
+      ],
+      "鋪面與人孔蓋、排水溝蓋銜接處狀況": [
+        "該路段無人手孔蓋或銜接處表面平整、無高差、無鬆動之現象",
+        "銜接處略微不平整，高差凹陷或隆起約1.5公分範圍內者",
+        "銜接處明顯不平整，高差凹陷或隆起約1.5公分範圍以上者",
+        "銜接處未填補，或有明顯坑洞或高差"
       ],
       "淨寬(步行寬度)=人行道整體寬度-(公共設施帶寬度 或 機車停車格位寬度 或 天橋、地下道出入口寬度)":
         [
