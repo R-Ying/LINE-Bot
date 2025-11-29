@@ -138,18 +138,6 @@ async function handleLoggedInUser() {
     }
 }
 
-async function recordPageView() {
-    try {
-        const response = await fetch('/api/record-page-view', {
-            method: 'POST',
-        });
-        const result = await response.json();
-        console.log('Page view record result:', result);
-    } catch (error) {
-        console.error('Error recording page view:', error);
-    }
-}
-
 function setupNavigation() {
     console.log("Setting up navigation...");
     const caseListLink = document.getElementById('caseListLink');
