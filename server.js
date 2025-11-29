@@ -389,7 +389,6 @@ app.post("/api/delete-case", async (req, res) => {
   }
 });
 
-const recentLogins = new Set();
 const recentPageViews = new Set();
 
 app.post('/api/record-user-login', async (req, res) => {
