@@ -134,7 +134,7 @@ async function handleLoggedInUser() {
         setupNavigation();
     } catch (error) {
         console.error('Error getting user profile:', error);
-        alert('獲取用戶信息失敗，請稍後再試');
+        alert('獲取使用者資訊失敗，請稍後再試');
     }
 }
 
