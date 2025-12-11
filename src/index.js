@@ -193,19 +193,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 }
 
-function clearCurrentImageAndStatus() {
-    // 清除圖片輸入
-    document.getElementById('uploadInput').value = '';
-    
-    // 清除圖片預覽
-    document.getElementById('imagePreview').innerHTML = '';
-    
-    // 重置所有位置相關狀態
-    resetLocationStatus();
-    
-    console.log('已清除圖片和位置狀態');
-}
-
   function resetLocationStatus() {
     currentImageHasGeoInfo = false;
     currentImageLocation = null;
