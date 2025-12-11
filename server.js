@@ -2,7 +2,7 @@ const express = require("express");
 const multer = require("multer");
 const fs = require("fs");
 const exec = require("child_process").exec;
-const { updateUserPoints, uploadImage, getUserCases, deleteCase, db, bucket, getCompletedCases, uploadCasePhoto, getInProgressCases, likeCase, recordUserLogin, recordPageView, getDashboardData, saveARIData, addComment, getComments, likeComment, deleteComment } = require("./firebase.js");
+const { updateUserPoints, uploadImage, deleteCase, db, getCompletedCases, uploadCasePhoto, getInProgressCases, likeCase, recordUserLogin, recordPageView, getDashboardData, saveARIData, addComment, getComments, likeComment, deleteComment } = require("./firebase.js");
 const { bot, sendMessage } = require("./bot");
 const fetch = require("node-fetch");
 require('dotenv').config();
@@ -16,7 +16,7 @@ app.post("/webhook", bot.parser());
 app.use(express.json());
 app.use(express.static('public'));
 app.use(express.static('dist', {
-  setHeaders: (res, path, stat) => {
+  setHeaders: (res, path) => {
     if (path.endsWith('.js')) {
       res.set('Content-Type', 'application/javascript');
     }
@@ -494,15 +494,6 @@ async function getAddress(lat, lon) {
   const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&addressdetails=1`);
   const data = await response.json();
   return data.display_name;
-}
-
-async function getLocationFromAddress(address) {
-  const response = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&addressdetails=1&limit=1`);
-  const data = await response.json();
-  if (data && data.length > 0) {
-    return { latitude: data[0].lat, longitude: data[0].lon };
-  }
-  return null;
 }
 
 app.listen(process.env.PORT || 8080, async () => {
