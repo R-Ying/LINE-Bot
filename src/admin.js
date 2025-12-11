@@ -256,7 +256,7 @@ function uploadPhotoModal(caseId) {
     submitButton.textContent = '上傳';
 }
 
-document.getElementById('repairModal').addEventListener('hide.bs.modal', function (event) {
+document.getElementById('repairModal').addEventListener('hide.bs.modal', function () {
     if (!formSubmitted) {
         const caseId = document.getElementById('caseId').value;
         fetch(`/api/revert-case-status`, {
@@ -265,7 +265,7 @@ document.getElementById('repairModal').addEventListener('hide.bs.modal', functio
             body: JSON.stringify({ caseId, status: '未處理' })
         })
         .then(response => response.json())
-        .then(result => {
+        .then(() => {
             console.log('案件狀態已恢復為未處理');
             updateDropdown(caseId, '未處理');
         })
@@ -519,7 +519,7 @@ function handleStatusChange(event) {
                 body: JSON.stringify({ caseId, status: newStatus })
             })
             .then(response => response.json())
-            .then(result => {
+            .then(() => {
                 console.log('案件狀態已更新');
                 alert('案件狀態已更新');
             })
