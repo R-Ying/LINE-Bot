@@ -1,4 +1,4 @@
-/* global liff, mapboxgl */
+/* global liff, mapboxgl, process */
 
 import './style.css';
 
