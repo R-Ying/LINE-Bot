@@ -1,3 +1,5 @@
+/* global liff */
+
 import "mapbox-gl/dist/mapbox-gl.css";
 import mapboxgl from "mapbox-gl";
 import EXIF from "exif-js";

@@ -1,3 +1,5 @@
+/* global liff */
+
 import './style.css';
 
 let map;

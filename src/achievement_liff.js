@@ -1,3 +1,5 @@
+/* global liff */
+
 // 全局變數
 const LiffAppId = "2005908466-lQ188J90";
 let userId = null;
