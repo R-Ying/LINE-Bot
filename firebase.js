@@ -546,12 +546,12 @@ async function generateAndInsertHistoricalData(days = 30) {
   const now = new Date();
 
   for (let i = 0; i < days; i++) {
+    // 計算日期
+    const date = new Date(now);
+    date.setDate(date.getDate() - i);
+    const dateString = date.toISOString().split('T')[0];
+    
     try {
-      // 計算日期
-      const date = new Date(now);
-      date.setDate(date.getDate() - i);
-      const dateString = date.toISOString().split('T')[0];
-
       console.log(`正在處理日期: ${dateString}`);
 
       // 生成隨機數據
