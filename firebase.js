@@ -215,7 +215,7 @@ async function recordUserLogin(userId) {
   }
 }
 
-function uploadImage(filePath, imageName, userId, latitude, longitude, ariData = null) {
+function uploadImage(filePath, imageName) {
   return new Promise((resolve, reject) => {
       const timestamp = Date.now();
       const uniqueImageName = `${timestamp}-${imageName}`;
