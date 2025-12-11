@@ -1,3 +1,5 @@
+/* global Chart, bootstrap */
+
 let isSubmitting = false;
 let likesChart = null;
 let usersChart = null;
